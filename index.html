@@ -281,6 +281,31 @@
     .error-msg { text-align: center; padding: 2rem 1rem; color: #c0392b; font-size: 0.9rem; line-height: 1.7; }
     .error-msg button { margin-top: 1rem; padding: 0.6rem 1.5rem; border-radius: 20px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 0.85rem; }
 
+    /* Recipe checklist */
+    .recipe-check-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .recipe-check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 5px 6px; border-radius: 8px; cursor: pointer;
+      transition: background 0.1s; user-select: none;
+    }
+    .recipe-check-item:hover { background: rgba(0,0,0,0.03); }
+    .recipe-check-item.checked .check-text { color: #c0c0c0; text-decoration: line-through; }
+    .check-box {
+      width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #d0d0d0;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      margin-top: 2px; background: #fff; transition: border-color 0.12s, background 0.12s;
+    }
+    .recipe-check-item.checked .check-box { background: #639922; border-color: #639922; }
+    .check-tick { display: none; color: #fff; font-size: 10px; font-weight: 700; line-height: 1; }
+    .recipe-check-item.checked .check-tick { display: block; }
+    .check-text { font-size: 0.875rem; color: #444; line-height: 1.6; }
+    .check-step-num { font-size: 0.68rem; font-weight: 700; color: #bbb; min-width: 16px; text-align: right; margin-top: 3px; flex-shrink: 0; }
+    .recipe-checklist-hint {
+      font-size: 0.74rem; color: #bbb; text-align: center;
+      padding: 6px 4px 0; display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: opacity 0.3s;
+    }
+
     /* Mobile (<=640px) */
     @media (max-width: 640px) {
       .container { padding: 1.25rem 1rem 2.5rem; }
@@ -414,7 +439,7 @@
     <div class="container">
       <div class="hero"><h1>From the Cupboard</h1></div>
       <div class="results-nav">
-        <div class="back-btn" id="backBtn">&#8592; Change ingredients</div>
+        <div class="back-btn" id="backBtn">&#8592; <span id="backBtnLabel">Change ingredients</span></div>
       </div>
       <div id="resultsContent"></div>
     </div>
@@ -448,6 +473,11 @@
   var selectedFlavors  = new Set();
   var selectedCuisines = new Set();
   var state = {};
+
+  // VIEW STATE — tracks whether results page is showing ideas or a full recipe
+  var viewMode        = 'ideas';   // 'ideas' | 'recipe'
+  var lastRecipes     = null;      // cached recipe list for back-navigation
+  var checklistHintDismissed = false;
 
   // LOCALSTORAGE KEYS
   var LS_PANTRY   = 'ftc_pantry';
@@ -679,7 +709,6 @@
       var colBody = col.querySelector('#col-body-' + id);
 
       if (expanded) {
-        // With subcategory headers
         sec.subcategories.forEach(function(sc) {
           colBody.appendChild(buildSubcatHead(sc.label, false, id));
           sc.items.forEach(function(item) {
@@ -702,7 +731,6 @@
           });
         }
       } else {
-        // Collapsed: first PREVIEW_COUNT items, no subcategory headers
         var shown = allItems.slice(0, PREVIEW_COUNT);
         shown.forEach(function(item) {
           var isCustom = customItems.some(function(c){ return c.n === item.n; });
@@ -911,7 +939,7 @@
       'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
       ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + cuisineLine + '\n\n' +
       'Rules:\n' +
-      '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey).\n' +
+      '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
       '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
       '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
       '- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n' +
@@ -944,7 +972,7 @@
       'Available ingredients the user has: ' + available.join(', ') + '.\n' +
       (must.length ? 'Must include: ' + must.join(', ') + '.\n' : '') + '\n' +
       'Rules:\n' +
-      '- The recipe must be 100% plant-based.\n' +
+      '- The recipe must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
       '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
       '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
       '- Aim for nutritional completeness: where the ingredients allow, include a protein source, a complex carbohydrate, and a vegetable.\n' +
@@ -972,8 +1000,44 @@
       });
   }
 
+  // BUILD CHECKLIST ITEM
+  function buildCheckItem(text, isStep, stepNum, onFirstCheck) {
+    var li = document.createElement('li');
+    li.className = 'recipe-check-item';
+
+    var box = document.createElement('span');
+    box.className = 'check-box';
+    box.innerHTML = '<span class="check-tick">\u2713</span>';
+
+    if (isStep) {
+      var numSpan = document.createElement('span');
+      numSpan.className = 'check-step-num';
+      numSpan.textContent = stepNum + '.';
+      li.appendChild(numSpan);
+    }
+
+    li.appendChild(box);
+
+    var textSpan = document.createElement('span');
+    textSpan.className = 'check-text';
+    textSpan.textContent = text;
+    li.appendChild(textSpan);
+
+    li.addEventListener('click', function() {
+      var wasUnchecked = !li.classList.contains('checked');
+      li.classList.toggle('checked');
+      if (wasUnchecked && typeof onFirstCheck === 'function') {
+        onFirstCheck();
+      }
+    });
+
+    return li;
+  }
+
   // RENDER RESULTS
   function renderResults(recipes) {
+    lastRecipes = recipes;
+    setViewMode('ideas');
     var wrap = document.getElementById('resultsContent');
     wrap.innerHTML = '';
     var grid = document.createElement('div');
@@ -1001,29 +1065,105 @@
   }
 
   function renderFullRecipe(recipe) {
+    setViewMode('recipe');
+    checklistHintDismissed = false;
+
     var wrap = document.getElementById('resultsContent');
-    wrap.innerHTML =
-      '<div class="recipe-card" style="max-width:640px;margin:0 auto;">' +
-        '<div class="recipe-card-emoji">' + (recipe.emoji || '\uD83C\uDF7D\uFE0F') + '</div>' +
-        '<div class="recipe-card-name" style="font-size:1.2rem">' + recipe.name + '</div>' +
-        '<div style="font-size:0.8rem;color:#aaa;margin-top:-4px">' + (recipe.servings||'') + ' \u00B7 ' + (recipe.time||'') + '</div>' +
-        '<div class="recipe-card-desc">' + recipe.description + '</div>' +
-        '<div style="margin-top:4px">' +
-          '<div style="font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">Ingredients</div>' +
-          '<ul style="padding-left:1.2rem;display:flex;flex-direction:column;gap:4px">' +
-            recipe.ingredients.map(function(i){ return '<li style="font-size:0.875rem;color:#444">' + i + '</li>'; }).join('') +
-          '</ul>' +
-        '</div>' +
-        '<div style="margin-top:8px">' +
-          '<div style="font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">Method</div>' +
-          '<ol style="padding-left:1.2rem;display:flex;flex-direction:column;gap:10px">' +
-            recipe.steps.map(function(s){ return '<li style="font-size:0.875rem;color:#444;line-height:1.6">' + s + '</li>'; }).join('') +
-          '</ol>' +
-        '</div>' +
-        '<div class="card-actions" style="margin-top:8px">' +
-          '<button class="btn-search" onclick="window.open(\'https://www.ecosia.org/search?q=' + encodeURIComponent(recipe.name + ' vegan recipe') + '\',\'_blank\')">Search online &#8599;</button>' +
-        '</div>' +
-      '</div>';
+    wrap.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'recipe-card';
+    card.style.cssText = 'max-width:640px;margin:0 auto;';
+
+    // Header
+    card.innerHTML =
+      '<div class="recipe-card-emoji">' + (recipe.emoji || '\uD83C\uDF7D\uFE0F') + '</div>' +
+      '<div class="recipe-card-name" style="font-size:1.2rem">' + recipe.name + '</div>' +
+      '<div style="font-size:0.8rem;color:#aaa;margin-top:-4px">' + (recipe.servings || '') + ' \u00B7 ' + (recipe.time || '') + '</div>' +
+      '<div class="recipe-card-desc">' + recipe.description + '</div>';
+
+    // Hint element (shared, dismissed on first check of either list)
+    var hint = document.createElement('div');
+    hint.className = 'recipe-checklist-hint';
+    hint.innerHTML = '\u2610 Tap any item to check it off as you cook';
+
+    function dismissHint() {
+      if (!checklistHintDismissed) {
+        checklistHintDismissed = true;
+        hint.style.opacity = '0';
+        setTimeout(function(){ hint.style.display = 'none'; }, 300);
+      }
+    }
+
+    // Ingredients section
+    var ingSection = document.createElement('div');
+    ingSection.style.cssText = 'margin-top:4px';
+    var ingLabel = document.createElement('div');
+    ingLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
+    ingLabel.textContent = 'Ingredients';
+    ingSection.appendChild(ingLabel);
+
+    var ingList = document.createElement('ul');
+    ingList.className = 'recipe-check-list';
+    (recipe.ingredients || []).forEach(function(ing) {
+      ingList.appendChild(buildCheckItem(ing, false, null, dismissHint));
+    });
+    ingSection.appendChild(ingList);
+    card.appendChild(ingSection);
+
+    // Steps section
+    var stepsSection = document.createElement('div');
+    stepsSection.style.cssText = 'margin-top:8px';
+    var stepsLabel = document.createElement('div');
+    stepsLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
+    stepsLabel.textContent = 'Method';
+    stepsSection.appendChild(stepsLabel);
+
+    var stepsList = document.createElement('ol');
+    stepsList.className = 'recipe-check-list';
+    (recipe.steps || []).forEach(function(step, idx) {
+      stepsList.appendChild(buildCheckItem(step, true, idx + 1, dismissHint));
+    });
+    stepsSection.appendChild(stepsList);
+    card.appendChild(stepsSection);
+
+    // Hint (after steps)
+    card.appendChild(hint);
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'card-actions';
+    actions.style.cssText = 'margin-top:8px';
+    var searchBtn = document.createElement('button');
+    searchBtn.className = 'btn-search';
+    searchBtn.innerHTML = 'Search online &#8599;';
+    searchBtn.addEventListener('click', function(){
+      window.open('https://www.ecosia.org/search?q=' + encodeURIComponent(recipe.name + ' vegan recipe'), '_blank');
+    });
+    actions.appendChild(searchBtn);
+    card.appendChild(actions);
+
+    wrap.appendChild(card);
+  }
+
+  // VIEW MODE & BACK BUTTON
+  function setViewMode(mode) {
+    viewMode = mode;
+    var label = document.getElementById('backBtnLabel');
+    if (mode === 'recipe') {
+      label.textContent = 'Back to ideas';
+    } else {
+      label.textContent = 'Change ingredients';
+    }
+  }
+
+  function handleBackBtn() {
+    if (viewMode === 'recipe' && lastRecipes) {
+      renderResults(lastRecipes);
+      showPage('page-results');
+    } else {
+      showPage('page-ingredients');
+    }
   }
 
   // PAGE NAVIGATION
@@ -1036,7 +1176,7 @@
   function showError(msg, withBack) {
     var wrap = document.getElementById('resultsContent');
     wrap.innerHTML = '<div class="error-msg">' + msg +
-      (withBack ? '<br><button onclick="showPage(\'page-results\')">&#8592; Back to suggestions</button>' : '') +
+      (withBack ? '<br><button onclick="handleBackBtn()">&#8592; Back</button>' : '') +
       '</div>';
     showPage('page-results');
   }
@@ -1064,7 +1204,7 @@
         });
     });
 
-    document.getElementById('backBtn').addEventListener('click', function(){ showPage('page-ingredients'); });
+    document.getElementById('backBtn').addEventListener('click', handleBackBtn);
     document.getElementById('modalClose').addEventListener('click', closeModal);
     document.getElementById('modalOverlay').addEventListener('click', function(e) {
       if (e.target === document.getElementById('modalOverlay')) closeModal();
