@@ -49,6 +49,19 @@
     .search-drop-item:hover { background: #f5f5f2; }
     .search-drop-item.add-custom { color: #639922; font-weight: 500; }
 
+    /* Meal context selector */
+    .meal-context-wrap { text-align: center; margin: 0.1rem 0 0.9rem; }
+    .meal-context-label { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
+    .meal-context-chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; align-items: center; }
+    .mc-chip {
+      padding: 6px 15px; border-radius: 20px; font-size: 0.8rem;
+      cursor: pointer; border: 1.5px solid #e0e0e0; color: #888;
+      background: #f5f5f2; transition: all 0.12s; user-select: none;
+    }
+    .mc-chip:hover { border-color: #ccc; color: #555; }
+    .mc-chip.mc-on { background: #EAF3DE; border-color: #639922; color: #27500A; font-weight: 600; }
+    .mc-sep { font-size: 0.65rem; color: #ccc; padding: 0 1px; line-height: 1; }
+
     /* Hint */
     .hint { text-align: center; font-size: 0.78rem; color: #999; margin-bottom: 1.1rem; line-height: 1.7; }
 
@@ -371,6 +384,11 @@
         <div class="search-drop" id="searchDrop"></div>
       </div>
 
+      <div class="meal-context-wrap">
+        <div class="meal-context-label">I&#8217;m looking for</div>
+        <div class="meal-context-chips" id="mealContextChips"></div>
+      </div>
+
       <p class="hint">
         Tap once to mark as <em>ingredient available</em> &nbsp;&middot;&nbsp;
         Tap again to mark as <strong>must use</strong> &nbsp;&middot;&nbsp;
@@ -464,30 +482,35 @@
     grains:  'rice, lentils, nuts\u2026'
   };
 
+  var MEAL_CONTEXT_OPTIONS = ['full meal', 'side dish', 'starter', 'snack', 'finger food'];
+
   // STATE
   var mustSet      = new Set();
   var customItems  = [];
   var expanded     = false;
   var activeModal  = null;
   var openPopover  = null;
-  var selectedFlavors  = new Set();
-  var selectedCuisines = new Set();
+  var selectedFlavors      = new Set();
+  var selectedCuisines     = new Set();
+  var selectedMealContexts = new Set(['full meal']);
   var state = {};
 
-  // VIEW STATE — tracks whether results page is showing ideas or a full recipe
-  var viewMode        = 'ideas';   // 'ideas' | 'recipe'
-  var lastRecipes     = null;      // cached recipe list for back-navigation
+  // VIEW STATE
+  var viewMode        = 'ideas';
+  var lastRecipes     = null;
   var checklistHintDismissed = false;
 
   // LOCALSTORAGE KEYS
-  var LS_PANTRY   = 'ftc_pantry';
-  var LS_FLAVOR   = 'ftc_flavor';
-  var LS_GRAINS   = 'ftc_grains';
-  var LS_MUST     = 'ftc_must';
-  var LS_CUSTOM   = 'ftc_custom';
-  var LS_SESSION  = 'ftc_session';
-  var LS_FLAVORS  = 'ftc_flavors';
-  var LS_CUISINES = 'ftc_cuisines';
+  var LS_PANTRY       = 'ftc_pantry';
+  var LS_FLAVOR       = 'ftc_flavor';
+  var LS_GRAINS       = 'ftc_grains';
+  var LS_AROMATICS    = 'ftc_aromatics';
+  var LS_MUST         = 'ftc_must';
+  var LS_CUSTOM       = 'ftc_custom';
+  var LS_SESSION      = 'ftc_session';
+  var LS_FLAVORS      = 'ftc_flavors';
+  var LS_CUISINES     = 'ftc_cuisines';
+  var LS_MEAL_CONTEXT = 'ftc_meal_context';
 
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   function markSession() { localStorage.setItem(LS_SESSION, todayStr()); }
@@ -496,13 +519,17 @@
     var pantryOn = INGREDIENTS.pantry.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
     var flavorOn = INGREDIENTS.flavor.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
     var grainsOn = INGREDIENTS.grains.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
-    localStorage.setItem(LS_PANTRY,   JSON.stringify(pantryOn));
-    localStorage.setItem(LS_FLAVOR,   JSON.stringify(flavorOn));
-    localStorage.setItem(LS_GRAINS,   JSON.stringify(grainsOn));
-    localStorage.setItem(LS_MUST,     JSON.stringify(Array.from(mustSet)));
-    localStorage.setItem(LS_CUSTOM,   JSON.stringify(customItems));
-    localStorage.setItem(LS_FLAVORS,  JSON.stringify(Array.from(selectedFlavors)));
-    localStorage.setItem(LS_CUISINES, JSON.stringify(Array.from(selectedCuisines)));
+    var aromaticNames = INGREDIENTS.produce.subcategories.find(function(sc){ return sc.label === 'Aromatics'; }).items.map(function(i){ return i.n; });
+    var aromaticsOn = aromaticNames.filter(function(n){ return state[n]; });
+    localStorage.setItem(LS_PANTRY,       JSON.stringify(pantryOn));
+    localStorage.setItem(LS_FLAVOR,       JSON.stringify(flavorOn));
+    localStorage.setItem(LS_GRAINS,       JSON.stringify(grainsOn));
+    localStorage.setItem(LS_AROMATICS,    JSON.stringify(aromaticsOn));
+    localStorage.setItem(LS_MUST,         JSON.stringify(Array.from(mustSet)));
+    localStorage.setItem(LS_CUSTOM,       JSON.stringify(customItems));
+    localStorage.setItem(LS_FLAVORS,      JSON.stringify(Array.from(selectedFlavors)));
+    localStorage.setItem(LS_CUISINES,     JSON.stringify(Array.from(selectedCuisines)));
+    localStorage.setItem(LS_MEAL_CONTEXT, JSON.stringify(Array.from(selectedMealContexts)));
   }
 
   function loadState() {
@@ -516,6 +543,11 @@
       if (flavorOn) INGREDIENTS.flavor.items.forEach(function(i){ state[i.n] = flavorOn.indexOf(i.n) !== -1; });
       var grainsOn = JSON.parse(localStorage.getItem(LS_GRAINS) || 'null');
       if (grainsOn) INGREDIENTS.grains.items.forEach(function(i){ state[i.n] = grainsOn.indexOf(i.n) !== -1; });
+      var savedAromatics = JSON.parse(localStorage.getItem(LS_AROMATICS) || 'null');
+      if (savedAromatics) {
+        var aromaticNames = INGREDIENTS.produce.subcategories.find(function(sc){ return sc.label === 'Aromatics'; }).items.map(function(i){ return i.n; });
+        aromaticNames.forEach(function(n){ state[n] = savedAromatics.indexOf(n) !== -1; });
+      }
       var savedMust = JSON.parse(localStorage.getItem(LS_MUST) || '[]');
       savedMust.forEach(function(n){ mustSet.add(n); });
       var savedCustom = JSON.parse(localStorage.getItem(LS_CUSTOM) || '[]');
@@ -528,15 +560,21 @@
       var savedCuisines = JSON.parse(localStorage.getItem(LS_CUISINES) || '[]');
       savedFlavors.forEach(function(f){ selectedFlavors.add(f); });
       savedCuisines.forEach(function(c){ selectedCuisines.add(c); });
+      var savedMealContext = JSON.parse(localStorage.getItem(LS_MEAL_CONTEXT) || 'null');
+      if (savedMealContext && Array.isArray(savedMealContext) && savedMealContext.length) {
+        selectedMealContexts.clear();
+        savedMealContext.forEach(function(m){ selectedMealContexts.add(m); });
+      }
     } catch(e) { console.warn('Could not restore state:', e); }
     markSession();
   }
 
   function resetToDefaults() {
-    [LS_PANTRY, LS_FLAVOR, LS_GRAINS, LS_MUST, LS_CUSTOM, LS_FLAVORS, LS_CUISINES].forEach(function(k){ localStorage.removeItem(k); });
+    [LS_PANTRY, LS_FLAVOR, LS_GRAINS, LS_AROMATICS, LS_MUST, LS_CUSTOM, LS_FLAVORS, LS_CUISINES, LS_MEAL_CONTEXT].forEach(function(k){ localStorage.removeItem(k); });
     Object.keys(state).forEach(function(k){ delete state[k]; });
     mustSet.clear(); customItems.splice(0);
     selectedFlavors.clear(); selectedCuisines.clear();
+    selectedMealContexts.clear(); selectedMealContexts.add('full meal');
     Object.values(INGREDIENTS).forEach(function(sec){
       sec.items.forEach(function(item){ state[item.n] = item.defaultOn; });
     });
@@ -544,6 +582,7 @@
     document.getElementById('flavorChips').innerHTML = '';
     document.getElementById('cuisineChips').innerHTML = '';
     renderMoodChips();
+    renderMealContextChips();
     renderAll();
   }
 
@@ -580,6 +619,43 @@
   }
 
   function renderAll() { renderDesktop(); renderMobile(); renderCustomStrip(); }
+
+  // MEAL CONTEXT CHIPS
+  function renderMealContextChips() {
+    var container = document.getElementById('mealContextChips');
+    container.innerHTML = '';
+    MEAL_CONTEXT_OPTIONS.forEach(function(opt, idx) {
+      if (idx > 0) {
+        var sep = document.createElement('span');
+        sep.className = 'mc-sep';
+        sep.textContent = 'or';
+        container.appendChild(sep);
+      }
+      var chip = document.createElement('span');
+      chip.className = 'mc-chip' + (selectedMealContexts.has(opt) ? ' mc-on' : '');
+      chip.textContent = opt;
+      chip.addEventListener('click', function() {
+        if (selectedMealContexts.has(opt)) {
+          // Don't allow deselecting the last one
+          if (selectedMealContexts.size > 1) {
+            selectedMealContexts.delete(opt);
+            chip.classList.remove('mc-on');
+          }
+        } else {
+          selectedMealContexts.add(opt);
+          chip.classList.add('mc-on');
+        }
+        updateOrSeparators();
+        saveState();
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  function updateOrSeparators() {
+    // Show 'or' separators only between selected chips that are adjacent, or always — keeps layout stable
+    // Simple approach: always show all separators, they're always visible as faint text
+  }
 
   // BUILD A STANDARD ING-ROW
   function buildStandardRow(item, catId, fontSize, onClick) {
@@ -929,15 +1005,17 @@
     var must       = Array.from(mustSet);
     var flavors    = Array.from(selectedFlavors);
     var cuisines   = Array.from(selectedCuisines);
+    var contexts   = Array.from(selectedMealContexts);
 
     var ingredientLine = available.length ? 'Available ingredients: ' + available.join(', ') + '.' : 'No specific ingredients selected.';
-    var mustLine    = must.length    ? 'Ingredients that MUST be included: ' + must.join(', ') + '.'   : '';
-    var flavorLine  = flavors.length ? 'Flavor mood: ' + flavors.join(', ') + '.'                      : '';
-    var cuisineLine = cuisines.length? 'Cuisine style: ' + cuisines.join(', ') + '.'                   : '';
+    var mustLine       = must.length    ? 'Ingredients that MUST be included: ' + must.join(', ') + '.'   : '';
+    var flavorLine     = flavors.length ? 'Flavor mood: ' + flavors.join(', ') + '.'                      : '';
+    var cuisineLine    = cuisines.length? 'Cuisine style: ' + cuisines.join(', ') + '.'                   : '';
+    var contextLine    = 'Meal context: the user is looking for ' + contexts.join(' or ') + '. Each suggestion must fit at least one of these contexts.';
 
     var prompt =
       'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
-      ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + cuisineLine + '\n\n' +
+      ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + cuisineLine + '\n' + contextLine + '\n\n' +
       'Rules:\n' +
       '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
       '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
@@ -1075,14 +1153,12 @@
     card.className = 'recipe-card';
     card.style.cssText = 'max-width:640px;margin:0 auto;';
 
-    // Header
     card.innerHTML =
       '<div class="recipe-card-emoji">' + (recipe.emoji || '\uD83C\uDF7D\uFE0F') + '</div>' +
       '<div class="recipe-card-name" style="font-size:1.2rem">' + recipe.name + '</div>' +
       '<div style="font-size:0.8rem;color:#aaa;margin-top:-4px">' + (recipe.servings || '') + ' \u00B7 ' + (recipe.time || '') + '</div>' +
       '<div class="recipe-card-desc">' + recipe.description + '</div>';
 
-    // Hint element (shared, dismissed on first check of either list)
     var hint = document.createElement('div');
     hint.className = 'recipe-checklist-hint';
     hint.innerHTML = '\u2610 Tap any item to check it off as you cook';
@@ -1095,7 +1171,6 @@
       }
     }
 
-    // Ingredients section
     var ingSection = document.createElement('div');
     ingSection.style.cssText = 'margin-top:4px';
     var ingLabel = document.createElement('div');
@@ -1111,7 +1186,6 @@
     ingSection.appendChild(ingList);
     card.appendChild(ingSection);
 
-    // Steps section
     var stepsSection = document.createElement('div');
     stepsSection.style.cssText = 'margin-top:8px';
     var stepsLabel = document.createElement('div');
@@ -1127,10 +1201,8 @@
     stepsSection.appendChild(stepsList);
     card.appendChild(stepsSection);
 
-    // Hint (after steps)
     card.appendChild(hint);
 
-    // Actions
     var actions = document.createElement('div');
     actions.className = 'card-actions';
     actions.style.cssText = 'margin-top:8px';
@@ -1188,6 +1260,7 @@
     renderMobile();
     renderCustomStrip();
     renderMoodChips();
+    renderMealContextChips();
     initSearch();
 
     document.getElementById('expandBar').addEventListener('click', toggleExpand);
