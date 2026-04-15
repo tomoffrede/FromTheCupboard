@@ -2,6 +2,9 @@
 // Each category has a `subcategories` array for visual grouping.
 // The flat `items` array is derived from subcategories at the bottom of this file
 // and is what the rest of the app uses — do not edit `items` directly.
+//
+// SHARED INGREDIENTS: items whose `n` string appears in both INGREDIENTS_RAW and
+// DESSERT_INGREDIENTS_RAW share state automatically (state is keyed by name).
 
 const INGREDIENTS_RAW = {
   pantry: {
@@ -103,19 +106,19 @@ const INGREDIENTS_RAW = {
       {
         label: 'Dried spices',
         items: [
-          { n: 'paprika',          defaultOn: false },
-          { n: 'smoked paprika',   defaultOn: false },
-          { n: 'cumin',            defaultOn: false },
-          { n: 'turmeric',         defaultOn: false },
-          { n: 'coriander',        defaultOn: false },
-          { n: 'chili flakes',     defaultOn: false },
-          { n: 'bay leaves',       defaultOn: false },
-          { n: 'cinnamon',         defaultOn: false },
-          { n: 'cardamom',         defaultOn: false },
-          { n: 'garam masala',     defaultOn: false },
-          { n: 'fennel seeds',     defaultOn: false },
-          { n: 'mustard seeds',    defaultOn: false },
-          { n: 'nutritional yeast',defaultOn: false },
+          { n: 'paprika',           defaultOn: false },
+          { n: 'smoked paprika',    defaultOn: false },
+          { n: 'cumin',             defaultOn: false },
+          { n: 'turmeric',          defaultOn: false },
+          { n: 'coriander',         defaultOn: false },
+          { n: 'chili flakes',      defaultOn: false },
+          { n: 'bay leaves',        defaultOn: false },
+          { n: 'cinnamon',          defaultOn: false },
+          { n: 'cardamom',          defaultOn: false },
+          { n: 'garam masala',      defaultOn: false },
+          { n: 'fennel seeds',      defaultOn: false },
+          { n: 'mustard seeds',     defaultOn: false },
+          { n: 'nutritional yeast', defaultOn: false },
         ]
       },
       {
@@ -186,7 +189,166 @@ const INGREDIENTS_RAW = {
   }
 };
 
-// Derive flat items array from subcategories — used by all app logic
+// ---------------------------------------------------------------------------
+// DESSERT MODE
+// ---------------------------------------------------------------------------
+// Shared ingredients (same `n` as above) carry state automatically.
+// New dessert-only ingredients are simply not present in INGREDIENTS_RAW.
+
+const DESSERT_INGREDIENTS_RAW = {
+  baking: {
+    icon: '\uD83C\uDF6C',
+    label: 'Baking',
+    persistAcrossSessions: true,
+    subcategories: [
+      {
+        label: 'Dry basics',
+        items: [
+          { n: 'flour',           defaultOn: false },
+          { n: 'sugar',           defaultOn: false },
+          { n: 'brown sugar',     defaultOn: false },
+          { n: 'icing sugar',     defaultOn: false },
+          { n: 'baking powder',   defaultOn: false },
+          { n: 'baking soda',     defaultOn: false },
+          { n: 'salt',            defaultOn: false },
+          { n: 'cornstarch',      defaultOn: false },
+          { n: 'cocoa powder',    defaultOn: false },
+          { n: 'dark chocolate',  defaultOn: false },
+          { n: 'chocolate chips', defaultOn: false },
+        ]
+      },
+      {
+        label: 'Wet & fat',
+        items: [
+          { n: 'vegetable oil',   defaultOn: false },
+          { n: 'coconut oil',     defaultOn: false },
+          { n: 'vanilla extract', defaultOn: false },
+          { n: 'maple syrup',     defaultOn: false },
+          { n: 'agave',           defaultOn: false },
+          { n: 'plant milk',      defaultOn: false },
+          { n: 'coconut milk',    defaultOn: false },
+          { n: 'vegan yogurt',    defaultOn: false },
+          { n: 'vegan cream',     defaultOn: false },
+          { n: 'apple cider vinegar', defaultOn: false },
+        ]
+      },
+      {
+        label: 'Spreads & pastes',
+        items: [
+          { n: 'peanut butter',   defaultOn: false },
+          { n: 'almond butter',   defaultOn: false },
+          { n: 'tahini',          defaultOn: false },
+          { n: 'jam',             defaultOn: false },
+          { n: 'date paste',      defaultOn: false },
+        ]
+      }
+    ]
+  },
+
+  dfruit: {
+    icon: '\uD83C\uDF53',
+    label: 'Fruit',
+    persistAcrossSessions: false,
+    subcategories: [
+      {
+        label: 'Tropical & stone',
+        items: [
+          { n: 'banana',      defaultOn: false },
+          { n: 'mango',       defaultOn: false },
+          { n: 'peach',       defaultOn: false },
+          { n: 'pear',        defaultOn: false },
+          { n: 'apple',       defaultOn: false },
+          { n: 'pineapple',   defaultOn: false },
+          { n: 'dates',       defaultOn: false },
+        ]
+      },
+      {
+        label: 'Berries',
+        items: [
+          { n: 'strawberries',  defaultOn: false },
+          { n: 'blueberries',   defaultOn: false },
+          { n: 'raspberries',   defaultOn: false },
+          { n: 'blackberries',  defaultOn: false },
+        ]
+      },
+      {
+        label: 'Citrus',
+        items: [
+          { n: 'lemon',   defaultOn: false },
+          { n: 'lime',    defaultOn: false },
+          { n: 'orange',  defaultOn: false },
+        ]
+      }
+    ]
+  },
+
+  dflavor: {
+    icon: '\uD83C\uDF6B',
+    label: 'Flavor',
+    persistAcrossSessions: true,
+    subcategories: [
+      {
+        label: 'Spices & powders',
+        items: [
+          { n: 'cinnamon',        defaultOn: false },
+          { n: 'cardamom',        defaultOn: false },
+          { n: 'ginger powder',   defaultOn: false },
+          { n: 'nutmeg',          defaultOn: false },
+          { n: 'cloves',          defaultOn: false },
+          { n: 'matcha',          defaultOn: false },
+          { n: 'espresso powder', defaultOn: false },
+          { n: 'turmeric',        defaultOn: false },
+        ]
+      },
+      {
+        label: 'Fresh & zesty',
+        items: [
+          { n: 'ginger',    defaultOn: false },
+          { n: 'mint',      defaultOn: false },
+          { n: 'lemon',     defaultOn: false },
+          { n: 'orange',    defaultOn: false },
+        ]
+      }
+    ]
+  },
+
+  dnuts: {
+    icon: '\uD83E\uDD5C',
+    label: 'Nuts & dry',
+    persistAcrossSessions: true,
+    subcategories: [
+      {
+        label: 'Nuts',
+        items: [
+          { n: 'almonds',   defaultOn: false },
+          { n: 'walnuts',   defaultOn: false },
+          { n: 'cashews',   defaultOn: false },
+          { n: 'peanuts',   defaultOn: false },
+          { n: 'pecans',    defaultOn: false },
+          { n: 'hazelnuts', defaultOn: false },
+          { n: 'pine nuts', defaultOn: false },
+        ]
+      },
+      {
+        label: 'Seeds & grains',
+        items: [
+          { n: 'oats',                defaultOn: false },
+          { n: 'chia seeds',          defaultOn: false },
+          { n: 'flaxseeds',           defaultOn: false },
+          { n: 'sesame seeds',        defaultOn: false },
+          { n: 'desiccated coconut',  defaultOn: false },
+          { n: 'rice flour',          defaultOn: false },
+          { n: 'ground almonds',      defaultOn: false },
+        ]
+      }
+    ]
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Derive flat items arrays
+// ---------------------------------------------------------------------------
+
 const INGREDIENTS = {};
 Object.entries(INGREDIENTS_RAW).forEach(([id, cat]) => {
   INGREDIENTS[id] = {
@@ -198,6 +360,21 @@ Object.entries(INGREDIENTS_RAW).forEach(([id, cat]) => {
   };
 });
 
+const DESSERT_INGREDIENTS = {};
+Object.entries(DESSERT_INGREDIENTS_RAW).forEach(([id, cat]) => {
+  DESSERT_INGREDIENTS[id] = {
+    icon: cat.icon,
+    label: cat.label,
+    persistAcrossSessions: cat.persistAcrossSessions,
+    subcategories: cat.subcategories,
+    items: cat.subcategories.flatMap(sc => sc.items),
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Savory mood / cuisine lists
+// ---------------------------------------------------------------------------
+
 const FLAVORS = [
   'spicy', 'fresh & light', 'rich & hearty', 'smoky',
   'tangy', 'umami-rich', 'comforting', 'aromatic', 'sweet'
@@ -207,4 +384,18 @@ const CUISINES = [
   'italian', 'mexican', 'japanese', 'indian',
   'middle eastern', 'thai', 'korean', 'ethiopian',
   'greek', 'french', 'spanish', 'chinese'
+];
+
+// ---------------------------------------------------------------------------
+// Dessert mood / style lists
+// ---------------------------------------------------------------------------
+
+const DESSERT_FLAVORS = [
+  'chocolatey', 'fruity', 'nutty', 'creamy',
+  'spiced', 'zesty', 'caramelized', 'light & fresh', 'indulgent'
+];
+
+const DESSERT_CUISINES = [
+  'american', 'french', 'italian', 'japanese',
+  'middle eastern', 'scandinavian', 'british', 'indian'
 ];

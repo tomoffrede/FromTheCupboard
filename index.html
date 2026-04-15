@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="From the Cupboard - find vegan recipe ideas based on what's in your kitchen.">
   <title>From the Cupboard</title>
-  <script src="ingredients.js"></script>
+  <script src="ingredients.js?v=1"></script>
   <style>
     /* Reset & base */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,7 +15,9 @@
       background: #FAFAF8;
       color: #1a1a1a;
       min-height: 100vh;
+      transition: background 0.25s;
     }
+    body.dessert-mode { background: #F5F3FB; }
 
     /* Layout */
     .page { display: none; }
@@ -30,6 +32,21 @@
     }
     .hero p { font-size: 1rem; color: #666; }
 
+    /* Mode toggle */
+    .mode-toggle-wrap { display: flex; justify-content: center; margin-bottom: 1.25rem; }
+    .mode-toggle {
+      display: flex; border-radius: 20px; border: 1.5px solid #ddd;
+      overflow: hidden; background: #fff;
+    }
+    .mode-btn {
+      padding: 6px 18px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; border: none; background: transparent;
+      color: #888; transition: all 0.15s; user-select: none;
+    }
+    .mode-btn.savory-active { background: #3B6D11; color: #fff; }
+    .mode-btn.dessert-active { background: #534AB7; color: #fff; }
+    body.dessert-mode .mode-toggle { border-color: #AFA9EC; }
+
     /* Search bar */
     .search-wrap { position: relative; max-width: 500px; margin: 0 auto 1rem; }
     .search-wrap input {
@@ -38,6 +55,7 @@
       color: #1a1a1a; outline: none; transition: border-color 0.15s;
     }
     .search-wrap input:focus { border-color: #639922; }
+    body.dessert-mode .search-wrap input:focus { border-color: #7F77DD; }
     .search-drop {
       display: none; position: absolute; top: calc(100% + 6px);
       left: 0; right: 0; background: #fff; border: 1px solid #e0e0e0;
@@ -48,22 +66,23 @@
     .search-drop-item { padding: 0.65rem 1.2rem; font-size: 0.9rem; cursor: pointer; color: #1a1a1a; }
     .search-drop-item:hover { background: #f5f5f2; }
     .search-drop-item.add-custom { color: #639922; font-weight: 500; }
+    body.dessert-mode .search-drop-item.add-custom { color: #534AB7; }
 
-    /* Meal context selector */
+    /* Meal context selector — savory only */
     .meal-context-wrap { text-align: center; margin: 0.1rem 0 0.9rem; }
     .meal-context-label { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
     .meal-context-chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; align-items: center; }
     .mc-chip {
-      padding: 6px 15px; border-radius: 20px; font-size: 0.8rem;
+      padding: 5px 11px; border-radius: 20px; font-size: 0.75rem;
       cursor: pointer; border: 1.5px solid #e0e0e0; color: #888;
       background: #f5f5f2; transition: all 0.12s; user-select: none;
     }
     .mc-chip:hover { border-color: #ccc; color: #555; }
     .mc-chip.mc-on { background: #EAF3DE; border-color: #639922; color: #27500A; font-weight: 600; }
-    .mc-sep { font-size: 0.65rem; color: #ccc; padding: 0 1px; line-height: 1; }
 
-    /* Hint */
-    .hint { text-align: center; font-size: 0.78rem; color: #999; margin-bottom: 1.1rem; line-height: 1.7; }
+    /* Hint + reset row */
+    .hint-reset-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+    .hint { font-size: 0.78rem; color: #999; line-height: 1.5; }
 
     /* Reset button */
     .reset-row { display: flex; justify-content: flex-end; margin-bottom: 0.6rem; }
@@ -77,16 +96,34 @@
     /* Ingredient columns (desktop) */
     .columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .col { border-radius: 18px; border: 2px solid transparent; overflow: hidden; cursor: pointer; }
-    .col.pantry { border-color: rgba(250,199,101,0.45); background: linear-gradient(160deg, #FEF9EC 0%, #fff 60%); }
-    .col.produce { border-color: rgba(93,202,165,0.45); background: linear-gradient(160deg, #EDFAF3 0%, #fff 60%); }
+
+    /* Savory column colours */
+    .col.pantry  { border-color: rgba(250,199,101,0.45); background: linear-gradient(160deg, #FEF9EC 0%, #fff 60%); }
+    .col.produce { border-color: rgba(93,202,165,0.45);  background: linear-gradient(160deg, #EDFAF3 0%, #fff 60%); }
     .col.flavor  { border-color: rgba(175,169,236,0.45); background: linear-gradient(160deg, #F5F0FE 0%, #fff 60%); }
     .col.grains  { border-color: rgba(240,155,123,0.45); background: linear-gradient(160deg, #FFF0E8 0%, #fff 60%); }
+
+    /* Dessert column colours */
+    .col.baking  { border-color: rgba(175,169,236,0.5);  background: linear-gradient(160deg, #F0EFFE 0%, #fff 60%); }
+    .col.dfruit  { border-color: rgba(93,202,165,0.45);  background: linear-gradient(160deg, #EDFAF3 0%, #fff 60%); }
+    .col.dflavor { border-color: rgba(240,155,123,0.45); background: linear-gradient(160deg, #FFF0E8 0%, #fff 60%); }
+    .col.dnuts   { border-color: rgba(250,199,101,0.5);  background: linear-gradient(160deg, #FEF9EC 0%, #fff 60%); }
+
     .col-head { padding: 14px 14px 10px; display: flex; align-items: center; gap: 10px; }
     .col-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+
+    /* Savory icon bgs */
     .col.pantry  .col-icon { background: #FEF9EC; }
     .col.produce .col-icon { background: #EDFAF3; }
     .col.flavor  .col-icon { background: #F5F0FE; }
     .col.grains  .col-icon { background: #FFF0E8; }
+
+    /* Dessert icon bgs */
+    .col.baking  .col-icon { background: #EAE6FF; }
+    .col.dfruit  .col-icon { background: #EDFAF3; }
+    .col.dflavor .col-icon { background: #FFE8D6; }
+    .col.dnuts   .col-icon { background: #FEF9EC; }
+
     .col-title { font-size: 0.875rem; font-weight: 600; color: #1a1a1a; }
     .col-count { font-size: 0.7rem; color: #888; margin-top: 1px; }
     .col-divider { height: 1px; margin: 0 12px; background: rgba(0,0,0,0.07); }
@@ -102,6 +139,8 @@
       letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
     }
     .subcat-line { flex: 1; height: 1px; }
+
+    /* Savory subcat colours */
     .col.pantry  .subcat-label { color: #BA7517; }
     .col.pantry  .subcat-line  { background: rgba(186,117,23,0.2); }
     .col.produce .subcat-label { color: #1D9E75; }
@@ -110,6 +149,16 @@
     .col.flavor  .subcat-line  { background: rgba(83,74,183,0.2); }
     .col.grains  .subcat-label { color: #D85A30; }
     .col.grains  .subcat-line  { background: rgba(216,90,48,0.2); }
+
+    /* Dessert subcat colours */
+    .col.baking  .subcat-label { color: #534AB7; }
+    .col.baking  .subcat-line  { background: rgba(83,74,183,0.2); }
+    .col.dfruit  .subcat-label { color: #1D9E75; }
+    .col.dfruit  .subcat-line  { background: rgba(29,158,117,0.2); }
+    .col.dflavor .subcat-label { color: #D85A30; }
+    .col.dflavor .subcat-line  { background: rgba(216,90,48,0.2); }
+    .col.dnuts   .subcat-label { color: #BA7517; }
+    .col.dnuts   .subcat-line  { background: rgba(186,117,23,0.2); }
 
     /* Subcategory headers inside modal */
     .modal-subcat-head {
@@ -121,6 +170,8 @@
       letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
     }
     .modal-subcat-line { flex: 1; height: 1px; }
+
+    /* Savory modal subcat */
     .modal-subcat-pantry  .modal-subcat-label { color: #BA7517; }
     .modal-subcat-pantry  .modal-subcat-line  { background: rgba(186,117,23,0.2); }
     .modal-subcat-produce .modal-subcat-label { color: #1D9E75; }
@@ -129,6 +180,16 @@
     .modal-subcat-flavor  .modal-subcat-line  { background: rgba(83,74,183,0.2); }
     .modal-subcat-grains  .modal-subcat-label { color: #D85A30; }
     .modal-subcat-grains  .modal-subcat-line  { background: rgba(216,90,48,0.2); }
+
+    /* Dessert modal subcat */
+    .modal-subcat-baking  .modal-subcat-label { color: #534AB7; }
+    .modal-subcat-baking  .modal-subcat-line  { background: rgba(83,74,183,0.2); }
+    .modal-subcat-dfruit  .modal-subcat-label { color: #1D9E75; }
+    .modal-subcat-dfruit  .modal-subcat-line  { background: rgba(29,158,117,0.2); }
+    .modal-subcat-dflavor .modal-subcat-label { color: #D85A30; }
+    .modal-subcat-dflavor .modal-subcat-line  { background: rgba(216,90,48,0.2); }
+    .modal-subcat-dnuts   .modal-subcat-label { color: #BA7517; }
+    .modal-subcat-dnuts   .modal-subcat-line  { background: rgba(186,117,23,0.2); }
 
     /* Ingredient rows */
     .ing-row {
@@ -139,7 +200,7 @@
     .ing-row:hover { background: rgba(0,0,0,0.04); }
     .ing-name { font-size: 0.82rem; color: #777; flex: 1; }
 
-    /* Selected states */
+    /* Savory selected states */
     .ing-row.on-pantry  { background: #FFF4D6; }
     .ing-row.on-produce { background: #DCF4E8; }
     .ing-row.on-flavor  { background: #EAE6FF; }
@@ -151,7 +212,17 @@
     .ing-row.on-custom  { background: #EBEBEB; }
     .ing-row.on-custom  .ing-name { color: #2a2a2a; font-weight: 600; }
 
-    /* Must-use states */
+    /* Dessert selected states */
+    .ing-row.on-baking  { background: #EAE6FF; }
+    .ing-row.on-baking  .ing-name { color: #3D2D99; font-weight: 600; }
+    .ing-row.on-dfruit  { background: #DCF4E8; }
+    .ing-row.on-dfruit  .ing-name { color: #1A6639; font-weight: 600; }
+    .ing-row.on-dflavor { background: #FFE8D6; }
+    .ing-row.on-dflavor .ing-name { color: #7A3300; font-weight: 600; }
+    .ing-row.on-dnuts   { background: #FFF4D6; }
+    .ing-row.on-dnuts   .ing-name { color: #7A5200; font-weight: 600; }
+
+    /* Savory must-use states */
     .ing-row.must-pantry  { background: #FAC765; }
     .ing-row.must-produce { background: #5DCAA5; }
     .ing-row.must-flavor  { background: #AFA9EC; }
@@ -162,6 +233,17 @@
     .ing-row.must-grains  .ing-name { color: #4A1500; font-weight: 600; }
     .ing-row.must-custom  { background: #888; }
     .ing-row.must-custom  .ing-name { color: #fff; font-weight: 600; }
+
+    /* Dessert must-use states */
+    .ing-row.must-baking  { background: #AFA9EC; }
+    .ing-row.must-baking  .ing-name { color: #1A1060; font-weight: 600; }
+    .ing-row.must-dfruit  { background: #5DCAA5; }
+    .ing-row.must-dfruit  .ing-name { color: #043427; font-weight: 600; }
+    .ing-row.must-dflavor { background: #F09B7B; }
+    .ing-row.must-dflavor .ing-name { color: #4A1500; font-weight: 600; }
+    .ing-row.must-dnuts   { background: #FAC765; }
+    .ing-row.must-dnuts   .ing-name { color: #4A2E00; font-weight: 600; }
+
     .must-star { font-size: 0.65rem; margin-left: 4px; }
 
     /* Delete button (custom items) */
@@ -232,6 +314,7 @@
     .mood-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.75rem; }
     .mood-block { text-align: center; }
     .mood-title { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
+    body.dessert-mode .mood-title { color: #7F77DD; }
     .mood-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
     .m-chip {
       padding: 7px 18px; border-radius: 20px; font-size: 0.82rem;
@@ -241,6 +324,8 @@
     .m-chip:hover { border-color: #ccc; color: #555; }
     .m-chip.fl-on { background: #FEF9EC; border-color: #EF9F27; color: #633806; }
     .m-chip.cu-on { background: #E6F1FB; border-color: #378ADD; color: #0C447C; }
+    body.dessert-mode .m-chip { border-color: #CCC8EE; }
+    body.dessert-mode .m-chip.fl-on { background: #EAE6FF; border-color: #7F77DD; color: #26215C; }
 
     /* CTA */
     .cta-wrap { text-align: center; }
@@ -254,11 +339,14 @@
     .cta:hover { background: #27500A; box-shadow: 0 6px 20px rgba(99,153,34,0.35); }
     .cta:active { transform: scale(0.98); }
     .cta:disabled { background: #aaa; box-shadow: none; cursor: default; }
+    body.dessert-mode .cta { background: #534AB7; box-shadow: 0 4px 16px rgba(83,74,183,0.28); }
+    body.dessert-mode .cta:hover { background: #3C3489; box-shadow: 0 6px 20px rgba(83,74,183,0.35); }
 
     /* Loading */
     #page-loading .container { text-align: center; padding-top: 5rem; }
     .dot-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 1.5rem; }
     .dot { width: 11px; height: 11px; border-radius: 50%; background: #639922; opacity: 0.2; animation: pulse 1.2s infinite; }
+    body.dessert-mode .dot { background: #534AB7; }
     .dot:nth-child(2) { animation-delay: 0.2s; }
     .dot:nth-child(3) { animation-delay: 0.4s; }
     @keyframes pulse {
@@ -289,6 +377,8 @@
     .card-actions { display: flex; gap: 8px; margin-top: 4px; }
     .btn-recipe { flex: 1; padding: 9px 0; border-radius: 14px; border: none; font-size: 0.82rem; font-weight: 600; cursor: pointer; background: #EAF3DE; color: #3B6D11; transition: background 0.12s; }
     .btn-recipe:hover { background: #d6eccc; }
+    body.dessert-mode .btn-recipe { background: #EAE6FF; color: #3C3489; }
+    body.dessert-mode .btn-recipe:hover { background: #d8d2f8; }
     .btn-search { flex: 1; padding: 9px 0; border-radius: 14px; border: 1px solid #e0e0e0; font-size: 0.82rem; cursor: pointer; background: #fff; color: #666; transition: background 0.12s; }
     .btn-search:hover { background: #f5f5f2; }
     .error-msg { text-align: center; padding: 2rem 1rem; color: #c0392b; font-size: 0.9rem; line-height: 1.7; }
@@ -309,6 +399,7 @@
       margin-top: 2px; background: #fff; transition: border-color 0.12s, background 0.12s;
     }
     .recipe-check-item.checked .check-box { background: #639922; border-color: #639922; }
+    body.dessert-mode .recipe-check-item.checked .check-box { background: #534AB7; border-color: #534AB7; }
     .check-tick { display: none; color: #fff; font-size: 10px; font-weight: 700; line-height: 1; }
     .recipe-check-item.checked .check-tick { display: block; }
     .check-text { font-size: 0.875rem; color: #444; line-height: 1.6; }
@@ -331,18 +422,37 @@
         transition: transform 0.1s; min-height: 100px;
       }
       .cat-btn:active { transform: scale(0.97); }
+
+      /* Savory mobile */
       .cat-btn.pantry  { border-color: rgba(250,199,101,0.6); background: linear-gradient(145deg, #FEF9EC, #fff); }
       .cat-btn.produce { border-color: rgba(93,202,165,0.6);  background: linear-gradient(145deg, #EDFAF3, #fff); }
       .cat-btn.flavor  { border-color: rgba(175,169,236,0.6); background: linear-gradient(145deg, #F5F0FE, #fff); }
       .cat-btn.grains  { border-color: rgba(240,155,123,0.6); background: linear-gradient(145deg, #FFF0E8, #fff); }
+
+      /* Dessert mobile */
+      .cat-btn.baking  { border-color: rgba(175,169,236,0.6); background: linear-gradient(145deg, #F0EFFE, #fff); }
+      .cat-btn.dfruit  { border-color: rgba(93,202,165,0.6);  background: linear-gradient(145deg, #EDFAF3, #fff); }
+      .cat-btn.dflavor { border-color: rgba(240,155,123,0.6); background: linear-gradient(145deg, #FFF0E8, #fff); }
+      .cat-btn.dnuts   { border-color: rgba(250,199,101,0.6); background: linear-gradient(145deg, #FEF9EC, #fff); }
+
       .cat-btn-icon    { font-size: 1.4rem; margin-bottom: 5px; display: block; }
       .cat-btn-name    { font-size: 0.875rem; font-weight: 600; color: #1a1a1a; display: block; margin-bottom: 2px; }
       .cat-btn-preview { font-size: 0.7rem; color: #888; display: block; line-height: 1.4; }
       .cat-badge { position: absolute; top: 9px; right: 9px; font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; background: #f0f0ec; color: #888; }
+
+      /* Savory badges */
       .cat-badge.pantry-has  { background: #FFF4D6; color: #7A5200; }
       .cat-badge.produce-has { background: #DCF4E8; color: #1A6639; }
       .cat-badge.flavor-has  { background: #EAE6FF; color: #3D2D99; }
       .cat-badge.grains-has  { background: #FFE8D6; color: #7A3300; }
+
+      /* Dessert badges */
+      .cat-badge.baking-has  { background: #EAE6FF; color: #3D2D99; }
+      .cat-badge.dfruit-has  { background: #DCF4E8; color: #1A6639; }
+      .cat-badge.dflavor-has { background: #FFE8D6; color: #7A3300; }
+      .cat-badge.dnuts-has   { background: #FFF4D6; color: #7A5200; }
+
+      .hint-reset-row { display: none; }
       .m-chip { padding: 6px 13px; font-size: 0.78rem; }
       .mood-row { gap: 1rem; }
       .cta { width: 100%; padding: 0.9rem 1rem; }
@@ -379,23 +489,25 @@
         <p>What&#8217;s in your kitchen?</p>
       </div>
 
+      <div class="mode-toggle-wrap">
+        <div class="mode-toggle">
+          <div class="mode-btn savory-active" id="modeBtnSavory">savory</div>
+          <div class="mode-btn" id="modeBtnDessert">dessert</div>
+        </div>
+      </div>
+
       <div class="search-wrap">
         <input type="text" id="searchInput" placeholder="Search or add an ingredient..." autocomplete="off">
         <div class="search-drop" id="searchDrop"></div>
       </div>
 
-      <div class="meal-context-wrap">
+      <div class="meal-context-wrap" id="mealContextWrap">
         <div class="meal-context-label">I&#8217;m looking for</div>
         <div class="meal-context-chips" id="mealContextChips"></div>
       </div>
 
-      <p class="hint">
-        Tap once to mark as <em>ingredient available</em> &nbsp;&middot;&nbsp;
-        Tap again to mark as <strong>must use</strong> &nbsp;&middot;&nbsp;
-        Tap again to remove
-      </p>
-
-      <div class="reset-row">
+      <div class="hint-reset-row">
+        <p class="hint">Tap once to mark as <em>available</em> &nbsp;&middot;&nbsp; Tap again to mark as <strong>must use</strong> &nbsp;&middot;&nbsp; Tap again to remove</p>
         <button class="reset-btn" id="resetBtn">Reset to defaults</button>
       </div>
 
@@ -418,11 +530,11 @@
 
       <div class="mood-row">
         <div class="mood-block">
-          <div class="mood-title">Flavor mood</div>
+          <div class="mood-title" id="flavorMoodTitle">Flavor mood</div>
           <div class="mood-chips" id="flavorChips"></div>
         </div>
         <div class="mood-block">
-          <div class="mood-title">Cuisine</div>
+          <div class="mood-title" id="cuisineTitle">Cuisine</div>
           <div class="mood-chips" id="cuisineChips"></div>
         </div>
       </div>
@@ -468,121 +580,226 @@
   var WORKER_URL    = 'https://fromthecupboard.tom-offrede.workers.dev';
   var PREVIEW_COUNT = 5;
 
-  var CAT_META = {
+  var CAT_META_SAVORY = {
     pantry:  { icon: '\uD83E\uDDC2', label: 'Pantry' },
     produce: { icon: '\uD83E\uDD66', label: 'Fresh produce' },
     flavor:  { icon: '\uD83C\uDF36\uFE0F', label: 'Flavor' },
     grains:  { icon: '\uD83C\uDF3E', label: 'Grains & dry goods' }
   };
+  var CAT_META_DESSERT = {
+    baking:  { icon: '\uD83C\uDF6C', label: 'Baking' },
+    dfruit:  { icon: '\uD83C\uDF53', label: 'Fruit' },
+    dflavor: { icon: '\uD83C\uDF6B', label: 'Flavor' },
+    dnuts:   { icon: '\uD83E\uDD5C', label: 'Nuts & dry' }
+  };
 
-  var MOBILE_PREVIEW = {
+  var MOBILE_PREVIEW_SAVORY = {
     pantry:  'oil, salt, soy sauce\u2026',
     produce: 'tomatoes, carrots\u2026',
     flavor:  'cumin, basil, chili\u2026',
     grains:  'rice, lentils, nuts\u2026'
   };
+  var MOBILE_PREVIEW_DESSERT = {
+    baking:  'flour, sugar, vanilla\u2026',
+    dfruit:  'banana, berries, lemon\u2026',
+    dflavor: 'cocoa, cinnamon, matcha\u2026',
+    dnuts:   'almonds, oats, coconut\u2026'
+  };
 
   var MEAL_CONTEXT_OPTIONS = ['full meal', 'side dish', 'starter', 'snack', 'finger food'];
 
   // STATE
+  var currentMode  = 'savory';   // 'savory' | 'dessert'
   var mustSet      = new Set();
   var customItems  = [];
   var expanded     = false;
   var activeModal  = null;
   var openPopover  = null;
-  var selectedFlavors      = new Set();
-  var selectedCuisines     = new Set();
-  var selectedMealContexts = new Set(['full meal']);
+  var selectedFlavors        = new Set();
+  var selectedCuisines       = new Set();
+  var selectedDessertFlavors = new Set();
+  var selectedDessertStyles  = new Set();
+  var selectedMealContexts   = new Set(['full meal']);
   var state = {};
 
   // VIEW STATE
-  var viewMode        = 'ideas';
-  var lastRecipes     = null;
+  var viewMode               = 'ideas';
+  var lastRecipes            = null;
   var checklistHintDismissed = false;
 
   // LOCALSTORAGE KEYS
-  var LS_PANTRY       = 'ftc_pantry';
-  var LS_FLAVOR       = 'ftc_flavor';
-  var LS_GRAINS       = 'ftc_grains';
-  var LS_AROMATICS    = 'ftc_aromatics';
-  var LS_MUST         = 'ftc_must';
-  var LS_CUSTOM       = 'ftc_custom';
-  var LS_SESSION      = 'ftc_session';
-  var LS_FLAVORS      = 'ftc_flavors';
-  var LS_CUISINES     = 'ftc_cuisines';
-  var LS_MEAL_CONTEXT = 'ftc_meal_context';
+  var LS_PANTRY         = 'ftc_pantry';
+  var LS_FLAVOR         = 'ftc_flavor';
+  var LS_GRAINS         = 'ftc_grains';
+  var LS_AROMATICS      = 'ftc_aromatics';
+  var LS_MUST           = 'ftc_must';
+  var LS_CUSTOM         = 'ftc_custom';
+  var LS_SESSION        = 'ftc_session';
+  var LS_FLAVORS        = 'ftc_flavors';
+  var LS_CUISINES       = 'ftc_cuisines';
+  var LS_MEAL_CONTEXT   = 'ftc_meal_context';
+  var LS_MODE           = 'ftc_mode';
+  var LS_DESSERT_BAKING = 'ftc_dessert_baking';
+  var LS_DESSERT_DNUTS  = 'ftc_dessert_dnuts';
+  var LS_DESSERT_DFLAVOR= 'ftc_dessert_dflavor';
+  var LS_DESSERT_FLAVORS= 'ftc_dessert_flavors';
+  var LS_DESSERT_STYLES = 'ftc_dessert_styles';
 
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   function markSession() { localStorage.setItem(LS_SESSION, todayStr()); }
 
+  function activeIngredients() {
+    return currentMode === 'dessert' ? DESSERT_INGREDIENTS : INGREDIENTS;
+  }
+  function activeCatMeta() {
+    return currentMode === 'dessert' ? CAT_META_DESSERT : CAT_META_SAVORY;
+  }
+  function activeMobilePreview() {
+    return currentMode === 'dessert' ? MOBILE_PREVIEW_DESSERT : MOBILE_PREVIEW_SAVORY;
+  }
+
   function saveState() {
+    // Savory persisted categories
     var pantryOn = INGREDIENTS.pantry.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
     var flavorOn = INGREDIENTS.flavor.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
     var grainsOn = INGREDIENTS.grains.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
     var aromaticNames = INGREDIENTS.produce.subcategories.find(function(sc){ return sc.label === 'Aromatics'; }).items.map(function(i){ return i.n; });
     var aromaticsOn = aromaticNames.filter(function(n){ return state[n]; });
-    localStorage.setItem(LS_PANTRY,       JSON.stringify(pantryOn));
-    localStorage.setItem(LS_FLAVOR,       JSON.stringify(flavorOn));
-    localStorage.setItem(LS_GRAINS,       JSON.stringify(grainsOn));
-    localStorage.setItem(LS_AROMATICS,    JSON.stringify(aromaticsOn));
-    localStorage.setItem(LS_MUST,         JSON.stringify(Array.from(mustSet)));
-    localStorage.setItem(LS_CUSTOM,       JSON.stringify(customItems));
-    localStorage.setItem(LS_FLAVORS,      JSON.stringify(Array.from(selectedFlavors)));
-    localStorage.setItem(LS_CUISINES,     JSON.stringify(Array.from(selectedCuisines)));
-    localStorage.setItem(LS_MEAL_CONTEXT, JSON.stringify(Array.from(selectedMealContexts)));
+    // Dessert persisted categories
+    var bakingOn  = DESSERT_INGREDIENTS.baking.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
+    var dflavOn   = DESSERT_INGREDIENTS.dflavor.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
+    var dnutsOn   = DESSERT_INGREDIENTS.dnuts.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
+
+    localStorage.setItem(LS_PANTRY,          JSON.stringify(pantryOn));
+    localStorage.setItem(LS_FLAVOR,          JSON.stringify(flavorOn));
+    localStorage.setItem(LS_GRAINS,          JSON.stringify(grainsOn));
+    localStorage.setItem(LS_AROMATICS,       JSON.stringify(aromaticsOn));
+    localStorage.setItem(LS_DESSERT_BAKING,  JSON.stringify(bakingOn));
+    localStorage.setItem(LS_DESSERT_DFLAVOR, JSON.stringify(dflavOn));
+    localStorage.setItem(LS_DESSERT_DNUTS,   JSON.stringify(dnutsOn));
+    localStorage.setItem(LS_MUST,            JSON.stringify(Array.from(mustSet)));
+    localStorage.setItem(LS_CUSTOM,          JSON.stringify(customItems));
+    localStorage.setItem(LS_FLAVORS,         JSON.stringify(Array.from(selectedFlavors)));
+    localStorage.setItem(LS_CUISINES,        JSON.stringify(Array.from(selectedCuisines)));
+    localStorage.setItem(LS_MEAL_CONTEXT,    JSON.stringify(Array.from(selectedMealContexts)));
+    localStorage.setItem(LS_DESSERT_FLAVORS, JSON.stringify(Array.from(selectedDessertFlavors)));
+    localStorage.setItem(LS_DESSERT_STYLES,  JSON.stringify(Array.from(selectedDessertStyles)));
+    localStorage.setItem(LS_MODE,            currentMode);
   }
 
   function loadState() {
+    // Initialise all ingredient defaults
     Object.values(INGREDIENTS).forEach(function(sec) {
       sec.items.forEach(function(item) { state[item.n] = item.defaultOn; });
     });
+    Object.values(DESSERT_INGREDIENTS).forEach(function(sec) {
+      sec.items.forEach(function(item) {
+        // Only set default if not already set by savory (shared ingredient)
+        if (!(item.n in state)) state[item.n] = item.defaultOn;
+      });
+    });
+
     try {
       var pantryOn = JSON.parse(localStorage.getItem(LS_PANTRY) || 'null');
       if (pantryOn) INGREDIENTS.pantry.items.forEach(function(i){ state[i.n] = pantryOn.indexOf(i.n) !== -1; });
+
       var flavorOn = JSON.parse(localStorage.getItem(LS_FLAVOR) || 'null');
       if (flavorOn) INGREDIENTS.flavor.items.forEach(function(i){ state[i.n] = flavorOn.indexOf(i.n) !== -1; });
+
       var grainsOn = JSON.parse(localStorage.getItem(LS_GRAINS) || 'null');
       if (grainsOn) INGREDIENTS.grains.items.forEach(function(i){ state[i.n] = grainsOn.indexOf(i.n) !== -1; });
+
       var savedAromatics = JSON.parse(localStorage.getItem(LS_AROMATICS) || 'null');
       if (savedAromatics) {
         var aromaticNames = INGREDIENTS.produce.subcategories.find(function(sc){ return sc.label === 'Aromatics'; }).items.map(function(i){ return i.n; });
         aromaticNames.forEach(function(n){ state[n] = savedAromatics.indexOf(n) !== -1; });
       }
+
+      var bakingOn = JSON.parse(localStorage.getItem(LS_DESSERT_BAKING) || 'null');
+      if (bakingOn) DESSERT_INGREDIENTS.baking.items.forEach(function(i){ state[i.n] = bakingOn.indexOf(i.n) !== -1; });
+
+      var dflavOn = JSON.parse(localStorage.getItem(LS_DESSERT_DFLAVOR) || 'null');
+      if (dflavOn) DESSERT_INGREDIENTS.dflavor.items.forEach(function(i){ state[i.n] = dflavOn.indexOf(i.n) !== -1; });
+
+      var dnutsOn = JSON.parse(localStorage.getItem(LS_DESSERT_DNUTS) || 'null');
+      if (dnutsOn) DESSERT_INGREDIENTS.dnuts.items.forEach(function(i){ state[i.n] = dnutsOn.indexOf(i.n) !== -1; });
+
       var savedMust = JSON.parse(localStorage.getItem(LS_MUST) || '[]');
       savedMust.forEach(function(n){ mustSet.add(n); });
+
       var savedCustom = JSON.parse(localStorage.getItem(LS_CUSTOM) || '[]');
       savedCustom.forEach(function(item) {
         var norm = { n: item.n, defaultOn: false, cat: item.cat || null, on: item.on !== undefined ? item.on : true };
         customItems.push(norm);
         state[norm.n] = norm.on;
       });
+
       var savedFlavors  = JSON.parse(localStorage.getItem(LS_FLAVORS)  || '[]');
       var savedCuisines = JSON.parse(localStorage.getItem(LS_CUISINES) || '[]');
       savedFlavors.forEach(function(f){ selectedFlavors.add(f); });
       savedCuisines.forEach(function(c){ selectedCuisines.add(c); });
+
       var savedMealContext = JSON.parse(localStorage.getItem(LS_MEAL_CONTEXT) || 'null');
       if (savedMealContext && Array.isArray(savedMealContext) && savedMealContext.length) {
         selectedMealContexts.clear();
         savedMealContext.forEach(function(m){ selectedMealContexts.add(m); });
       }
+
+      var savedDFlavors = JSON.parse(localStorage.getItem(LS_DESSERT_FLAVORS) || '[]');
+      savedDFlavors.forEach(function(f){ selectedDessertFlavors.add(f); });
+
+      var savedDStyles = JSON.parse(localStorage.getItem(LS_DESSERT_STYLES) || '[]');
+      savedDStyles.forEach(function(s){ selectedDessertStyles.add(s); });
+
+      var savedMode = localStorage.getItem(LS_MODE);
+      if (savedMode === 'dessert') { currentMode = 'dessert'; }
+
     } catch(e) { console.warn('Could not restore state:', e); }
     markSession();
   }
 
   function resetToDefaults() {
-    [LS_PANTRY, LS_FLAVOR, LS_GRAINS, LS_AROMATICS, LS_MUST, LS_CUSTOM, LS_FLAVORS, LS_CUISINES, LS_MEAL_CONTEXT].forEach(function(k){ localStorage.removeItem(k); });
+    var keysToRemove = [
+      LS_PANTRY, LS_FLAVOR, LS_GRAINS, LS_AROMATICS, LS_MUST, LS_CUSTOM,
+      LS_FLAVORS, LS_CUISINES, LS_MEAL_CONTEXT,
+      LS_DESSERT_BAKING, LS_DESSERT_DFLAVOR, LS_DESSERT_DNUTS,
+      LS_DESSERT_FLAVORS, LS_DESSERT_STYLES
+    ];
+    keysToRemove.forEach(function(k){ localStorage.removeItem(k); });
     Object.keys(state).forEach(function(k){ delete state[k]; });
     mustSet.clear(); customItems.splice(0);
     selectedFlavors.clear(); selectedCuisines.clear();
     selectedMealContexts.clear(); selectedMealContexts.add('full meal');
+    selectedDessertFlavors.clear(); selectedDessertStyles.clear();
     Object.values(INGREDIENTS).forEach(function(sec){
       sec.items.forEach(function(item){ state[item.n] = item.defaultOn; });
     });
+    Object.values(DESSERT_INGREDIENTS).forEach(function(sec){
+      sec.items.forEach(function(item){ if (!(item.n in state)) state[item.n] = item.defaultOn; });
+    });
     saveState();
-    document.getElementById('flavorChips').innerHTML = '';
-    document.getElementById('cuisineChips').innerHTML = '';
     renderMoodChips();
     renderMealContextChips();
+    renderAll();
+  }
+
+  // MODE SWITCHING
+  function switchMode(mode) {
+    if (mode === currentMode) return;
+    currentMode = mode;
+    document.body.classList.toggle('dessert-mode', mode === 'dessert');
+    document.getElementById('modeBtnSavory').className  = 'mode-btn' + (mode === 'savory'  ? ' savory-active'  : '');
+    document.getElementById('modeBtnDessert').className = 'mode-btn' + (mode === 'dessert' ? ' dessert-active' : '');
+    // Show/hide meal context (savory only)
+    document.getElementById('mealContextWrap').style.display = mode === 'savory' ? '' : 'none';
+    // Update mood section titles
+    document.getElementById('flavorMoodTitle').textContent = 'Flavor mood';
+    document.getElementById('cuisineTitle').textContent    = mode === 'dessert' ? 'Style' : 'Cuisine';
+    expanded = false;
+    document.getElementById('expandLabel').textContent = 'show more';
+    document.getElementById('expandArr').innerHTML     = '&#9660;';
+    saveState();
+    renderMoodChips();
     renderAll();
   }
 
@@ -624,19 +841,12 @@
   function renderMealContextChips() {
     var container = document.getElementById('mealContextChips');
     container.innerHTML = '';
-    MEAL_CONTEXT_OPTIONS.forEach(function(opt, idx) {
-      if (idx > 0) {
-        var sep = document.createElement('span');
-        sep.className = 'mc-sep';
-        sep.textContent = 'or';
-        container.appendChild(sep);
-      }
+    MEAL_CONTEXT_OPTIONS.forEach(function(opt) {
       var chip = document.createElement('span');
       chip.className = 'mc-chip' + (selectedMealContexts.has(opt) ? ' mc-on' : '');
       chip.textContent = opt;
       chip.addEventListener('click', function() {
         if (selectedMealContexts.has(opt)) {
-          // Don't allow deselecting the last one
           if (selectedMealContexts.size > 1) {
             selectedMealContexts.delete(opt);
             chip.classList.remove('mc-on');
@@ -645,16 +855,10 @@
           selectedMealContexts.add(opt);
           chip.classList.add('mc-on');
         }
-        updateOrSeparators();
         saveState();
       });
       container.appendChild(chip);
     });
-  }
-
-  function updateOrSeparators() {
-    // Show 'or' separators only between selected chips that are adjacent, or always — keeps layout stable
-    // Simple approach: always show all separators, they're always visible as faint text
   }
 
   // BUILD A STANDARD ING-ROW
@@ -685,11 +889,12 @@
       catBtn.title = 'Assign to a category';
       var popover = document.createElement('div');
       popover.className = 'cat-popover';
-      Object.entries(CAT_META).forEach(function(entry) {
-        var catId = entry[0]; var meta = entry[1];
+      var meta = activeCatMeta();
+      Object.entries(meta).forEach(function(entry) {
+        var catId = entry[0]; var m = entry[1];
         var opt = document.createElement('div');
         opt.className = 'cat-popover-item';
-        opt.innerHTML = meta.icon + ' ' + meta.label;
+        opt.innerHTML = m.icon + ' ' + m.label;
         opt.addEventListener('click', function(e) {
           e.stopPropagation(); closePopover(); assignCustomItemCat(item.n, catId);
         });
@@ -762,8 +967,9 @@
   function renderDesktop() {
     var wrap = document.getElementById('desktopColumns');
     wrap.innerHTML = '';
+    var ings = activeIngredients();
 
-    Object.entries(INGREDIENTS).forEach(function(entry) {
+    Object.entries(ings).forEach(function(entry) {
       var id = entry[0]; var sec = entry[1];
       var categorised = customItems.filter(function(c){ return c.cat === id; });
       var allItems    = sec.items.concat(categorised);
@@ -771,7 +977,7 @@
 
       var col = document.createElement('div');
       col.className = 'col ' + id;
-      col.addEventListener('click', function(e){ if (!e.target.closest('.ing-row') && !expanded) toggleExpand(); });
+      col.addEventListener('click', function(e){ if (!e.target.closest('.ing-row')) toggleExpand(); });
 
       col.innerHTML =
         '<div class="col-head">' +
@@ -840,7 +1046,10 @@
   function renderMobile() {
     var grid = document.getElementById('mobileGrid');
     grid.innerHTML = '';
-    Object.entries(INGREDIENTS).forEach(function(entry) {
+    var ings    = activeIngredients();
+    var preview = activeMobilePreview();
+
+    Object.entries(ings).forEach(function(entry) {
       var id = entry[0]; var sec = entry[1];
       var categorised = customItems.filter(function(c){ return c.cat === id; });
       var allItems    = sec.items.concat(categorised);
@@ -852,7 +1061,7 @@
         '<span class="cat-badge ' + hasCls + '">' + (count ? count + ' \u2713' : '\u2014') + '</span>' +
         '<span class="cat-btn-icon">' + sec.icon + '</span>' +
         '<span class="cat-btn-name">' + sec.label + '</span>' +
-        '<span class="cat-btn-preview">' + MOBILE_PREVIEW[id] + '</span>';
+        '<span class="cat-btn-preview">' + (preview[id] || '') + '</span>';
       btn.addEventListener('click', function(){ openModal(id); });
       grid.appendChild(btn);
     });
@@ -860,7 +1069,8 @@
 
   function openModal(id) {
     activeModal = id;
-    document.getElementById('modalTitle').innerHTML = INGREDIENTS[id].icon + ' ' + INGREDIENTS[id].label;
+    var ings = activeIngredients();
+    document.getElementById('modalTitle').innerHTML = ings[id].icon + ' ' + ings[id].label;
     renderModalBody();
     document.getElementById('modalOverlay').classList.add('open');
   }
@@ -868,7 +1078,9 @@
   function renderModalBody() {
     if (!activeModal) return;
     var id  = activeModal;
-    var sec = INGREDIENTS[id];
+    var ings = activeIngredients();
+    var sec = ings[id];
+    if (!sec) return;
     var categorised = customItems.filter(function(c){ return c.cat === id; });
     var body = document.getElementById('modalBody');
     body.innerHTML = '';
@@ -907,9 +1119,10 @@
 
   // SEARCH
   function allIngredientNames() {
-    return Object.values(INGREDIENTS).reduce(function(acc, s){
-      return acc.concat(s.items.map(function(i){ return i.n; }));
-    }, []).concat(customItems.map(function(i){ return i.n; }));
+    var savoryNames  = Object.values(INGREDIENTS).reduce(function(acc, s){ return acc.concat(s.items.map(function(i){ return i.n; })); }, []);
+    var dessertNames = Object.values(DESSERT_INGREDIENTS).reduce(function(acc, s){ return acc.concat(s.items.map(function(i){ return i.n; })); }, []);
+    var combined = savoryNames.concat(dessertNames.filter(function(n){ return savoryNames.indexOf(n) === -1; }));
+    return combined.concat(customItems.map(function(i){ return i.n; }));
   }
 
   function initSearch() {
@@ -954,28 +1167,56 @@
     });
   }
 
-  // MOOD CHIPS
+  // MOOD CHIPS — re-renders based on current mode
   function renderMoodChips() {
-    FLAVORS.forEach(function(f) {
-      var chip = document.createElement('span');
-      chip.className = 'm-chip' + (selectedFlavors.has(f) ? ' fl-on' : '');
-      chip.textContent = f;
-      chip.addEventListener('click', function() {
-        if (selectedFlavors.has(f)) selectedFlavors.delete(f); else selectedFlavors.add(f);
-        chip.classList.toggle('fl-on'); saveState();
+    var flavorContainer  = document.getElementById('flavorChips');
+    var cuisineContainer = document.getElementById('cuisineChips');
+    flavorContainer.innerHTML  = '';
+    cuisineContainer.innerHTML = '';
+
+    if (currentMode === 'savory') {
+      FLAVORS.forEach(function(f) {
+        var chip = document.createElement('span');
+        chip.className = 'm-chip' + (selectedFlavors.has(f) ? ' fl-on' : '');
+        chip.textContent = f;
+        chip.addEventListener('click', function() {
+          if (selectedFlavors.has(f)) selectedFlavors.delete(f); else selectedFlavors.add(f);
+          chip.classList.toggle('fl-on'); saveState();
+        });
+        flavorContainer.appendChild(chip);
       });
-      document.getElementById('flavorChips').appendChild(chip);
-    });
-    CUISINES.forEach(function(c) {
-      var chip = document.createElement('span');
-      chip.className = 'm-chip' + (selectedCuisines.has(c) ? ' cu-on' : '');
-      chip.textContent = c;
-      chip.addEventListener('click', function() {
-        if (selectedCuisines.has(c)) selectedCuisines.delete(c); else selectedCuisines.add(c);
-        chip.classList.toggle('cu-on'); saveState();
+      CUISINES.forEach(function(c) {
+        var chip = document.createElement('span');
+        chip.className = 'm-chip' + (selectedCuisines.has(c) ? ' cu-on' : '');
+        chip.textContent = c;
+        chip.addEventListener('click', function() {
+          if (selectedCuisines.has(c)) selectedCuisines.delete(c); else selectedCuisines.add(c);
+          chip.classList.toggle('cu-on'); saveState();
+        });
+        cuisineContainer.appendChild(chip);
       });
-      document.getElementById('cuisineChips').appendChild(chip);
-    });
+    } else {
+      DESSERT_FLAVORS.forEach(function(f) {
+        var chip = document.createElement('span');
+        chip.className = 'm-chip' + (selectedDessertFlavors.has(f) ? ' fl-on' : '');
+        chip.textContent = f;
+        chip.addEventListener('click', function() {
+          if (selectedDessertFlavors.has(f)) selectedDessertFlavors.delete(f); else selectedDessertFlavors.add(f);
+          chip.classList.toggle('fl-on'); saveState();
+        });
+        flavorContainer.appendChild(chip);
+      });
+      DESSERT_CUISINES.forEach(function(s) {
+        var chip = document.createElement('span');
+        chip.className = 'm-chip' + (selectedDessertStyles.has(s) ? ' cu-on' : '');
+        chip.textContent = s;
+        chip.addEventListener('click', function() {
+          if (selectedDessertStyles.has(s)) selectedDessertStyles.delete(s); else selectedDessertStyles.add(s);
+          chip.classList.toggle('cu-on'); saveState();
+        });
+        cuisineContainer.appendChild(chip);
+      });
+    }
   }
 
   // WORKER FETCH
@@ -1001,34 +1242,58 @@
 
   // API CALLS
   function fetchRecipeIdeas() {
-    var available  = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
-    var must       = Array.from(mustSet);
-    var flavors    = Array.from(selectedFlavors);
-    var cuisines   = Array.from(selectedCuisines);
-    var contexts   = Array.from(selectedMealContexts);
+    var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
+    var must      = Array.from(mustSet);
 
     var ingredientLine = available.length ? 'Available ingredients: ' + available.join(', ') + '.' : 'No specific ingredients selected.';
-    var mustLine       = must.length    ? 'Ingredients that MUST be included: ' + must.join(', ') + '.'   : '';
-    var flavorLine     = flavors.length ? 'Flavor mood: ' + flavors.join(', ') + '.'                      : '';
-    var cuisineLine    = cuisines.length? 'Cuisine style: ' + cuisines.join(', ') + '.'                   : '';
-    var contextLine    = 'Meal context: the user is looking for ' + contexts.join(' or ') + '. Each suggestion must fit at least one of these contexts.';
+    var mustLine       = must.length ? 'Ingredients that MUST be included: ' + must.join(', ') + '.' : '';
 
-    var prompt =
-      'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
-      ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + cuisineLine + '\n' + contextLine + '\n\n' +
-      'Rules:\n' +
-      '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
-      '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
-      '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
-      '- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n' +
-      '- Do NOT invent or hallucinate URLs, websites, or sources.\n' +
-      '- Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.\n' +
-      '- Each item must have exactly these fields:\n' +
-      '  "name": string (dish name),\n' +
-      '  "emoji": string (one relevant emoji),\n' +
-      '  "description": string (one short, factual sentence -- what the dish is, nothing more; no selling, no adjectives like delicious/hearty/vibrant)\n\n' +
-      'Example format:\n' +
-      '[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Pasta tossed with garlic, olive oil, and chili flakes."}]';
+    var prompt;
+    if (currentMode === 'dessert') {
+      var dFlavors = Array.from(selectedDessertFlavors);
+      var dStyles  = Array.from(selectedDessertStyles);
+      var flavorLine  = dFlavors.length ? 'Flavor mood: ' + dFlavors.join(', ') + '.' : '';
+      var styleLine   = dStyles.length  ? 'Style: ' + dStyles.join(', ') + '.'        : '';
+      prompt =
+        'You are a vegan dessert recipe assistant. Suggest exactly 6 plant-based dessert ideas.\n\n' +
+        ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n\n' +
+        'Rules:\n' +
+        '- All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
+        '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
+        '- Suggest only desserts and sweet dishes. Do not suggest savoury food.\n' +
+        '- Use metric measurements where applicable.\n' +
+        '- Do NOT invent or hallucinate URLs, websites, or sources.\n' +
+        '- Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.\n' +
+        '- Each item must have exactly these fields:\n' +
+        '  "name": string (dish name),\n' +
+        '  "emoji": string (one relevant emoji),\n' +
+        '  "description": string (one short, factual sentence \u2014 what the dish is, nothing more; no selling, no adjectives like delicious/decadent/indulgent)\n\n' +
+        'Example format:\n' +
+        '[{"name":"Banana Oat Cookies","emoji":"\uD83C\uDF6A","description":"Baked cookies made from mashed banana and rolled oats."}]';
+    } else {
+      var flavors  = Array.from(selectedFlavors);
+      var cuisines = Array.from(selectedCuisines);
+      var contexts = Array.from(selectedMealContexts);
+      var flavorLine2  = flavors.length  ? 'Flavor mood: ' + flavors.join(', ') + '.'  : '';
+      var cuisineLine  = cuisines.length ? 'Cuisine style: ' + cuisines.join(', ') + '.': '';
+      var contextLine  = 'Meal context: the user is looking for ' + contexts.join(' or ') + '. Each suggestion must fit at least one of these contexts.';
+      prompt =
+        'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
+        ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n\n' +
+        'Rules:\n' +
+        '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
+        '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
+        '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
+        '- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n' +
+        '- Do NOT invent or hallucinate URLs, websites, or sources.\n' +
+        '- Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.\n' +
+        '- Each item must have exactly these fields:\n' +
+        '  "name": string (dish name),\n' +
+        '  "emoji": string (one relevant emoji),\n' +
+        '  "description": string (one short, factual sentence -- what the dish is, nothing more; no selling, no adjectives like delicious/hearty/vibrant)\n\n' +
+        'Example format:\n' +
+        '[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Pasta tossed with garlic, olive oil, and chili flakes."}]';
+    }
 
     return workerFetch({ messages: [{ role: 'user', content: prompt }], max_tokens: 1200 })
       .then(function(data) {
@@ -1044,16 +1309,17 @@
     showPage('page-loading');
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
+    var isDessert = currentMode === 'dessert';
 
     var prompt =
-      'You are a vegan recipe assistant. Write a complete recipe for "' + dishName + '".\n\n' +
+      'You are a vegan ' + (isDessert ? 'dessert ' : '') + 'recipe assistant. Write a complete recipe for "' + dishName + '".\n\n' +
       'Available ingredients the user has: ' + available.join(', ') + '.\n' +
       (must.length ? 'Must include: ' + must.join(', ') + '.\n' : '') + '\n' +
       'Rules:\n' +
-      '- The recipe must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
+      '- The recipe must be 100% plant-based (no ' + (isDessert ? 'dairy, eggs, or honey' : 'meat, fish, dairy, eggs, or honey') + ') \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
       '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
-      '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
-      '- Aim for nutritional completeness: where the ingredients allow, include a protein source, a complex carbohydrate, and a vegetable.\n' +
+      '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable).\n' +
+      (isDessert ? '' : '- Aim for nutritional completeness: where the ingredients allow, include a protein source, a complex carbohydrate, and a vegetable.\n') +
       '- Do NOT invent or hallucinate URLs or sources.\n' +
       '- Return ONLY valid JSON with no preamble, no markdown fences.\n' +
       '- The JSON must have exactly these fields:\n' +
@@ -1082,33 +1348,25 @@
   function buildCheckItem(text, isStep, stepNum, onFirstCheck) {
     var li = document.createElement('li');
     li.className = 'recipe-check-item';
-
     var box = document.createElement('span');
     box.className = 'check-box';
     box.innerHTML = '<span class="check-tick">\u2713</span>';
-
     if (isStep) {
       var numSpan = document.createElement('span');
       numSpan.className = 'check-step-num';
       numSpan.textContent = stepNum + '.';
       li.appendChild(numSpan);
     }
-
     li.appendChild(box);
-
     var textSpan = document.createElement('span');
     textSpan.className = 'check-text';
     textSpan.textContent = text;
     li.appendChild(textSpan);
-
     li.addEventListener('click', function() {
       var wasUnchecked = !li.classList.contains('checked');
       li.classList.toggle('checked');
-      if (wasUnchecked && typeof onFirstCheck === 'function') {
-        onFirstCheck();
-      }
+      if (wasUnchecked && typeof onFirstCheck === 'function') onFirstCheck();
     });
-
     return li;
   }
 
@@ -1145,14 +1403,11 @@
   function renderFullRecipe(recipe) {
     setViewMode('recipe');
     checklistHintDismissed = false;
-
     var wrap = document.getElementById('resultsContent');
     wrap.innerHTML = '';
-
     var card = document.createElement('div');
     card.className = 'recipe-card';
     card.style.cssText = 'max-width:640px;margin:0 auto;';
-
     card.innerHTML =
       '<div class="recipe-card-emoji">' + (recipe.emoji || '\uD83C\uDF7D\uFE0F') + '</div>' +
       '<div class="recipe-card-name" style="font-size:1.2rem">' + recipe.name + '</div>' +
@@ -1162,7 +1417,6 @@
     var hint = document.createElement('div');
     hint.className = 'recipe-checklist-hint';
     hint.innerHTML = '\u2610 Tap any item to check it off as you cook';
-
     function dismissHint() {
       if (!checklistHintDismissed) {
         checklistHintDismissed = true;
@@ -1177,7 +1431,6 @@
     ingLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
     ingLabel.textContent = 'Ingredients';
     ingSection.appendChild(ingLabel);
-
     var ingList = document.createElement('ul');
     ingList.className = 'recipe-check-list';
     (recipe.ingredients || []).forEach(function(ing) {
@@ -1192,7 +1445,6 @@
     stepsLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
     stepsLabel.textContent = 'Method';
     stepsSection.appendChild(stepsLabel);
-
     var stepsList = document.createElement('ol');
     stepsList.className = 'recipe-check-list';
     (recipe.steps || []).forEach(function(step, idx) {
@@ -1200,7 +1452,6 @@
     });
     stepsSection.appendChild(stepsList);
     card.appendChild(stepsSection);
-
     card.appendChild(hint);
 
     var actions = document.createElement('div');
@@ -1214,7 +1465,6 @@
     });
     actions.appendChild(searchBtn);
     card.appendChild(actions);
-
     wrap.appendChild(card);
   }
 
@@ -1222,11 +1472,7 @@
   function setViewMode(mode) {
     viewMode = mode;
     var label = document.getElementById('backBtnLabel');
-    if (mode === 'recipe') {
-      label.textContent = 'Back to ideas';
-    } else {
-      label.textContent = 'Change ingredients';
-    }
+    label.textContent = mode === 'recipe' ? 'Back to ideas' : 'Change ingredients';
   }
 
   function handleBackBtn() {
@@ -1256,6 +1502,16 @@
   // INIT
   function init() {
     loadState();
+
+    // Apply saved mode to DOM before first render
+    if (currentMode === 'dessert') {
+      document.body.classList.add('dessert-mode');
+      document.getElementById('modeBtnSavory').className  = 'mode-btn';
+      document.getElementById('modeBtnDessert').className = 'mode-btn dessert-active';
+      document.getElementById('mealContextWrap').style.display = 'none';
+      document.getElementById('cuisineTitle').textContent = 'Style';
+    }
+
     renderDesktop();
     renderMobile();
     renderCustomStrip();
@@ -1263,6 +1519,8 @@
     renderMealContextChips();
     initSearch();
 
+    document.getElementById('modeBtnSavory').addEventListener('click',  function(){ switchMode('savory'); });
+    document.getElementById('modeBtnDessert').addEventListener('click', function(){ switchMode('dessert'); });
     document.getElementById('expandBar').addEventListener('click', toggleExpand);
     document.getElementById('resetBtn').addEventListener('click', resetToDefaults);
 
