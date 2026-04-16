@@ -227,8 +227,8 @@ const DESSERT_INGREDIENTS_RAW = {
           { n: 'agave',           defaultOn: false },
           { n: 'plant milk',      defaultOn: false },
           { n: 'coconut milk',    defaultOn: false },
-          { n: 'vegan yogurt',    defaultOn: false },
-          { n: 'vegan cream',     defaultOn: false },
+          { n: '(veg) yogurt',    defaultOn: false },
+          { n: '(veg) cream',     defaultOn: false },
           { n: 'apple cider vinegar', defaultOn: false },
         ]
       },
