@@ -310,8 +310,42 @@
     }
     .cat-popover-item:hover { background: #f5f5f2; }
 
+    /* More options collapsible */
+    .more-options-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      cursor: pointer; padding: 6px 0 12px;
+      user-select: none;
+    }
+    .more-options-toggle span {
+      font-size: 0.78rem; color: #aaa; transition: color 0.15s;
+    }
+    .more-options-toggle:hover span { color: #777; }
+    .more-options-arr {
+      font-size: 0.72rem; color: #bbb; display: inline-block;
+      transition: transform 0.2s, color 0.15s;
+    }
+    .more-options-toggle:hover .more-options-arr { color: #888; }
+    .more-options-arr.open { transform: rotate(180deg); }
+    .more-options-body {
+      display: none; margin-bottom: 1.75rem;
+    }
+    .more-options-body.open { display: block; }
+
+    /* Extra request field */
+    .extra-request-wrap { margin-bottom: 1.25rem; }
+    .extra-request-wrap textarea {
+      width: 100%; padding: 0.7rem 1rem; border-radius: 14px;
+      border: 1.5px solid #e0e0e0; font-size: 0.88rem;
+      font-family: inherit; background: #fff; color: #1a1a1a;
+      resize: none; outline: none; line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    .extra-request-wrap textarea:focus { border-color: #639922; }
+    body.dessert-mode .extra-request-wrap textarea:focus { border-color: #7F77DD; }
+    .extra-request-wrap textarea::placeholder { color: #bbb; }
+
     /* Mood / cuisine */
-    .mood-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.75rem; }
+    .mood-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
     .mood-block { text-align: center; }
     .mood-title { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
     body.dessert-mode .mood-title { color: #7F77DD; }
@@ -381,8 +415,9 @@
     body.dessert-mode .btn-recipe:hover { background: #d8d2f8; }
     .btn-search { flex: 1; padding: 9px 0; border-radius: 14px; border: 1px solid #e0e0e0; font-size: 0.82rem; cursor: pointer; background: #fff; color: #666; transition: background 0.12s; }
     .btn-search:hover { background: #f5f5f2; }
-    .error-msg { text-align: center; padding: 2rem 1rem; color: #c0392b; font-size: 0.9rem; line-height: 1.7; }
-    .error-msg button { margin-top: 1rem; padding: 0.6rem 1.5rem; border-radius: 20px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 0.85rem; }
+    .error-msg { text-align: center; padding: 3rem 1.5rem; color: #c0392b; font-size: 1.35rem; font-weight: 600; line-height: 1.5; }
+    .error-msg .error-sub { display: block; font-size: 0.85rem; font-weight: 400; color: #999; margin-top: 0.5rem; }
+    .error-msg button { margin-top: 1.5rem; padding: 0.7rem 1.8rem; border-radius: 20px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 0.9rem; }
 
     /* Recipe checklist */
     .recipe-check-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -528,14 +563,24 @@
         <div class="custom-strip-body" id="customStripBody"></div>
       </div>
 
-      <div class="mood-row">
-        <div class="mood-block">
-          <div class="mood-title" id="flavorMoodTitle">Flavor mood</div>
-          <div class="mood-chips" id="flavorChips"></div>
+      <div class="more-options-toggle" id="moreOptionsToggle">
+        <span id="moreOptionsLabel">More options</span>
+        <span class="more-options-arr" id="moreOptionsArr">&#9660;</span>
+      </div>
+
+      <div class="more-options-body" id="moreOptionsBody">
+        <div class="extra-request-wrap">
+          <textarea id="extraRequestInput" rows="2" placeholder="Any extra requirements? e.g. &quot;no tomatoes&quot;, &quot;kid-friendly&quot;, &quot;Thai-inspired&quot;&#8230;"></textarea>
         </div>
-        <div class="mood-block">
-          <div class="mood-title" id="cuisineTitle">Cuisine</div>
-          <div class="mood-chips" id="cuisineChips"></div>
+        <div class="mood-row">
+          <div class="mood-block">
+            <div class="mood-title" id="flavorMoodTitle">Flavor mood</div>
+            <div class="mood-chips" id="flavorChips"></div>
+          </div>
+          <div class="mood-block">
+            <div class="mood-title" id="cuisineTitle">Cuisine</div>
+            <div class="mood-chips" id="cuisineChips"></div>
+          </div>
         </div>
       </div>
 
@@ -658,6 +703,10 @@
     return currentMode === 'dessert' ? MOBILE_PREVIEW_DESSERT : MOBILE_PREVIEW_SAVORY;
   }
 
+  function getExtraRequest() {
+    return document.getElementById('extraRequestInput').value.trim();
+  }
+
   function saveState() {
     // Savory persisted categories
     var pantryOn = INGREDIENTS.pantry.items.filter(function(i){ return state[i.n]; }).map(function(i){ return i.n; });
@@ -771,6 +820,7 @@
     selectedFlavors.clear(); selectedCuisines.clear();
     selectedMealContexts.clear(); selectedMealContexts.add('full meal');
     selectedDessertFlavors.clear(); selectedDessertStyles.clear();
+    document.getElementById('extraRequestInput').value = '';
     Object.values(INGREDIENTS).forEach(function(sec){
       sec.items.forEach(function(item){ state[item.n] = item.defaultOn; });
     });
@@ -801,6 +851,18 @@
     saveState();
     renderMoodChips();
     renderAll();
+  }
+
+  // MORE OPTIONS TOGGLE
+  function initMoreOptions() {
+    var toggle = document.getElementById('moreOptionsToggle');
+    var body   = document.getElementById('moreOptionsBody');
+    var arr    = document.getElementById('moreOptionsArr');
+    toggle.addEventListener('click', function() {
+      var isOpen = body.classList.contains('open');
+      body.classList.toggle('open', !isOpen);
+      arr.classList.toggle('open', !isOpen);
+    });
   }
 
   // INGREDIENT STATE CYCLE
@@ -1244,9 +1306,11 @@
   function fetchRecipeIdeas() {
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
+    var extraReq  = getExtraRequest();
 
     var ingredientLine = available.length ? 'Available ingredients: ' + available.join(', ') + '.' : 'No specific ingredients selected.';
     var mustLine       = must.length ? 'Ingredients that MUST be included: ' + must.join(', ') + '.' : '';
+    var extraLine      = extraReq ? 'The user has one additional requirement that must be respected: ' + extraReq : '';
 
     var prompt;
     if (currentMode === 'dessert') {
@@ -1256,7 +1320,7 @@
       var styleLine   = dStyles.length  ? 'Style: ' + dStyles.join(', ') + '.'        : '';
       prompt =
         'You are a vegan dessert recipe assistant. Suggest exactly 6 plant-based dessert ideas.\n\n' +
-        ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n\n' +
+        ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n\n' +
         'Rules:\n' +
         '- All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
         '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
@@ -1279,7 +1343,7 @@
       var contextLine  = 'Meal context: the user is looking for ' + contexts.join(' or ') + '. Each suggestion must fit at least one of these contexts.';
       prompt =
         'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
-        ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n\n' +
+        ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n\n' +
         'Rules:\n' +
         '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
         '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
@@ -1309,12 +1373,15 @@
     showPage('page-loading');
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
+    var extraReq  = getExtraRequest();
     var isDessert = currentMode === 'dessert';
+    var extraLine = extraReq ? 'The user has one additional requirement that must be respected: ' + extraReq : '';
 
     var prompt =
       'You are a vegan ' + (isDessert ? 'dessert ' : '') + 'recipe assistant. Write a complete recipe for "' + dishName + '".\n\n' +
       'Available ingredients the user has: ' + available.join(', ') + '.\n' +
-      (must.length ? 'Must include: ' + must.join(', ') + '.\n' : '') + '\n' +
+      (must.length ? 'Must include: ' + must.join(', ') + '.\n' : '') +
+      (extraLine   ? extraLine + '\n'                            : '') + '\n' +
       'Rules:\n' +
       '- The recipe must be 100% plant-based (no ' + (isDessert ? 'dairy, eggs, or honey' : 'meat, fish, dairy, eggs, or honey') + ') \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
       '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
@@ -1340,7 +1407,7 @@
       })
       .catch(function(e) {
         console.error('[FtC] getFullRecipe failed:', e);
-        showError('Couldn\u2019t load that recipe. Please try again.', true);
+        showError('The AI didn\u2019t respond.<span class="error-sub">Please try again.</span>', true);
       });
   }
 
@@ -1518,6 +1585,7 @@
     renderMoodChips();
     renderMealContextChips();
     initSearch();
+    initMoreOptions();
 
     document.getElementById('modeBtnSavory').addEventListener('click',  function(){ switchMode('savory'); });
     document.getElementById('modeBtnDessert').addEventListener('click', function(){ switchMode('dessert'); });
@@ -1531,7 +1599,7 @@
         .then(function(recipes) { renderResults(recipes); showPage('page-results'); })
         .catch(function(e) {
           console.error('[FtC] fetchRecipeIdeas failed:', e);
-          showError('Something went wrong connecting to the recipe engine. Please check your internet connection and try again.');
+          showError('The AI didn\u2019t respond.<span class="error-sub">Please try again.</span>');
         });
     });
 
