@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="From the Cupboard - find vegan recipe ideas based on what's in your kitchen.">
   <title>From the Cupboard</title>
-  <script src="ingredients.js?v=1"></script>
+  <script src="ingredients.js?v=2"></script>
   <style>
     /* Reset & base */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,17 +24,10 @@
     .page.active { display: block; }
     .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
 
-    /* Header */
-    .hero { text-align: center; margin-bottom: 2rem; }
-    .hero h1 {
-      font-size: 2rem; font-weight: 600; color: #1a1a1a;
-      letter-spacing: -0.02em; margin-bottom: 0.4rem; cursor: pointer;
-    }
-    .hero p { font-size: 1rem; color: #666; }
-
-    /* Mode toggle — fixed top-right corner */
-    .mode-toggle-fixed {
+    /* Top-right fixed bar: mode toggle + language selector side by side */
+    .topright-bar {
       position: fixed; top: 16px; right: 20px; z-index: 400;
+      display: flex; align-items: center; gap: 8px;
     }
     .mode-toggle {
       display: flex; border-radius: 20px; border: 1.5px solid #ddd;
@@ -49,9 +42,31 @@
     .mode-btn.savory-active { background: #3B6D11; color: #fff; }
     .mode-btn.dessert-active { background: #534AB7; color: #fff; }
     body.dessert-mode .mode-toggle { border-color: #AFA9EC; }
+
+    /* Language selector */
+    .lang-select-wrap {
+      position: relative;
+    }
+    .lang-select {
+      appearance: none; -webkit-appearance: none;
+      padding: 6px 28px 6px 12px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: 1.5px solid #ddd; border-radius: 20px;
+      background: #fff; color: #555;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      outline: none; transition: border-color 0.15s;
+    }
+    .lang-select:hover { border-color: #bbb; }
+    .lang-select:focus { border-color: #999; }
+    body.dessert-mode .lang-select { border-color: #AFA9EC; }
+    .lang-select-arrow {
+      pointer-events: none; position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%); font-size: 0.5rem; color: #aaa;
+    }
+
     @media (max-width: 640px) {
-      .mode-toggle-fixed { top: 12px; right: 12px; }
-      .mode-btn { padding: 5px 11px; font-size: 0.72rem; }
+      .topright-bar { top: 12px; right: 12px; gap: 6px; }
+      .mode-btn { padding: 5px 10px; font-size: 0.7rem; }
+      .lang-select { padding: 5px 24px 5px 10px; font-size: 0.7rem; }
     }
 
     /* Search bar */
@@ -75,7 +90,7 @@
     .search-drop-item.add-custom { color: #639922; font-weight: 500; }
     body.dessert-mode .search-drop-item.add-custom { color: #534AB7; }
 
-    /* Meal context selector — savory only */
+    /* Meal context selector */
     .meal-context-wrap { text-align: center; margin: 0.1rem 0 0.9rem; }
     .meal-context-label { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px; }
     .meal-context-chips { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; align-items: center; }
@@ -87,14 +102,14 @@
     .mc-chip:hover { border-color: #ccc; color: #555; }
     .mc-chip.mc-on { background: #EAF3DE; border-color: #639922; color: #27500A; font-weight: 600; }
 
-    /* Hint + reset row — three-column grid so hint is truly centred */
+    /* Hint + reset row */
     .hint-reset-row {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
       margin-bottom: 0.75rem;
     }
-    .hint-reset-spacer { /* left placeholder — keeps hint centred */ }
+    .hint-reset-spacer { }
     .hint { font-size: 0.78rem; color: #999; line-height: 1.5; text-align: center; }
     .hint-reset-right { display: flex; justify-content: flex-end; }
     .reset-btn {
@@ -107,14 +122,10 @@
     /* Ingredient columns (desktop) */
     .columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
     .col { border-radius: 18px; border: 2px solid transparent; overflow: hidden; cursor: pointer; }
-
-    /* Savory column colours */
     .col.pantry  { border-color: rgba(250,199,101,0.45); background: linear-gradient(160deg, #FEF9EC 0%, #fff 60%); }
     .col.produce { border-color: rgba(93,202,165,0.45);  background: linear-gradient(160deg, #EDFAF3 0%, #fff 60%); }
     .col.flavor  { border-color: rgba(175,169,236,0.45); background: linear-gradient(160deg, #F5F0FE 0%, #fff 60%); }
     .col.grains  { border-color: rgba(240,155,123,0.45); background: linear-gradient(160deg, #FFF0E8 0%, #fff 60%); }
-
-    /* Dessert column colours */
     .col.baking  { border-color: rgba(175,169,236,0.5);  background: linear-gradient(160deg, #F0EFFE 0%, #fff 60%); }
     .col.dfruit  { border-color: rgba(93,202,165,0.45);  background: linear-gradient(160deg, #EDFAF3 0%, #fff 60%); }
     .col.dflavor { border-color: rgba(240,155,123,0.45); background: linear-gradient(160deg, #FFF0E8 0%, #fff 60%); }
@@ -122,14 +133,10 @@
 
     .col-head { padding: 14px 14px 10px; display: flex; align-items: center; gap: 10px; }
     .col-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-
-    /* Savory icon bgs */
     .col.pantry  .col-icon { background: #FEF9EC; }
     .col.produce .col-icon { background: #EDFAF3; }
     .col.flavor  .col-icon { background: #F5F0FE; }
     .col.grains  .col-icon { background: #FFF0E8; }
-
-    /* Dessert icon bgs */
     .col.baking  .col-icon { background: #EAE6FF; }
     .col.dfruit  .col-icon { background: #EDFAF3; }
     .col.dflavor .col-icon { background: #FFE8D6; }
@@ -140,18 +147,10 @@
     .col-divider { height: 1px; margin: 0 12px; background: rgba(0,0,0,0.07); }
     .col-body { padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 
-    /* Subcategory headers inside columns */
-    .subcat-head {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 8px 2px; margin-top: 4px;
-    }
-    .subcat-label {
-      font-size: 0.65rem; font-weight: 600;
-      letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
-    }
+    /* Subcategory headers */
+    .subcat-head { display: flex; align-items: center; gap: 6px; padding: 6px 8px 2px; margin-top: 4px; }
+    .subcat-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }
     .subcat-line { flex: 1; height: 1px; }
-
-    /* Savory subcat colours */
     .col.pantry  .subcat-label { color: #BA7517; }
     .col.pantry  .subcat-line  { background: rgba(186,117,23,0.2); }
     .col.produce .subcat-label { color: #1D9E75; }
@@ -160,8 +159,6 @@
     .col.flavor  .subcat-line  { background: rgba(83,74,183,0.2); }
     .col.grains  .subcat-label { color: #D85A30; }
     .col.grains  .subcat-line  { background: rgba(216,90,48,0.2); }
-
-    /* Dessert subcat colours */
     .col.baking  .subcat-label { color: #534AB7; }
     .col.baking  .subcat-line  { background: rgba(83,74,183,0.2); }
     .col.dfruit  .subcat-label { color: #1D9E75; }
@@ -171,18 +168,10 @@
     .col.dnuts   .subcat-label { color: #BA7517; }
     .col.dnuts   .subcat-line  { background: rgba(186,117,23,0.2); }
 
-    /* Subcategory headers inside modal */
-    .modal-subcat-head {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 8px 2px; margin-top: 4px;
-    }
-    .modal-subcat-label {
-      font-size: 0.68rem; font-weight: 600;
-      letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
-    }
+    /* Modal subcategory headers */
+    .modal-subcat-head { display: flex; align-items: center; gap: 6px; padding: 8px 8px 2px; margin-top: 4px; }
+    .modal-subcat-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap; }
     .modal-subcat-line { flex: 1; height: 1px; }
-
-    /* Savory modal subcat */
     .modal-subcat-pantry  .modal-subcat-label { color: #BA7517; }
     .modal-subcat-pantry  .modal-subcat-line  { background: rgba(186,117,23,0.2); }
     .modal-subcat-produce .modal-subcat-label { color: #1D9E75; }
@@ -191,8 +180,6 @@
     .modal-subcat-flavor  .modal-subcat-line  { background: rgba(83,74,183,0.2); }
     .modal-subcat-grains  .modal-subcat-label { color: #D85A30; }
     .modal-subcat-grains  .modal-subcat-line  { background: rgba(216,90,48,0.2); }
-
-    /* Dessert modal subcat */
     .modal-subcat-baking  .modal-subcat-label { color: #534AB7; }
     .modal-subcat-baking  .modal-subcat-line  { background: rgba(83,74,183,0.2); }
     .modal-subcat-dfruit  .modal-subcat-label { color: #1D9E75; }
@@ -203,15 +190,9 @@
     .modal-subcat-dnuts   .modal-subcat-line  { background: rgba(186,117,23,0.2); }
 
     /* Ingredient rows */
-    .ing-row {
-      display: flex; align-items: center;
-      padding: 6px 8px; border-radius: 10px;
-      cursor: pointer; transition: background 0.1s; user-select: none;
-    }
+    .ing-row { display: flex; align-items: center; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: background 0.1s; user-select: none; }
     .ing-row:hover { background: rgba(0,0,0,0.04); }
     .ing-name { font-size: 0.82rem; color: #777; flex: 1; }
-
-    /* Savory selected states */
     .ing-row.on-pantry  { background: #FFF4D6; }
     .ing-row.on-produce { background: #DCF4E8; }
     .ing-row.on-flavor  { background: #EAE6FF; }
@@ -222,8 +203,6 @@
     .ing-row.on-grains  .ing-name { color: #7A3300; font-weight: 600; }
     .ing-row.on-custom  { background: #EBEBEB; }
     .ing-row.on-custom  .ing-name { color: #2a2a2a; font-weight: 600; }
-
-    /* Dessert selected states */
     .ing-row.on-baking  { background: #EAE6FF; }
     .ing-row.on-baking  .ing-name { color: #3D2D99; font-weight: 600; }
     .ing-row.on-dfruit  { background: #DCF4E8; }
@@ -232,8 +211,6 @@
     .ing-row.on-dflavor .ing-name { color: #7A3300; font-weight: 600; }
     .ing-row.on-dnuts   { background: #FFF4D6; }
     .ing-row.on-dnuts   .ing-name { color: #7A5200; font-weight: 600; }
-
-    /* Savory must-use states */
     .ing-row.must-pantry  { background: #FAC765; }
     .ing-row.must-produce { background: #5DCAA5; }
     .ing-row.must-flavor  { background: #AFA9EC; }
@@ -244,8 +221,6 @@
     .ing-row.must-grains  .ing-name { color: #4A1500; font-weight: 600; }
     .ing-row.must-custom  { background: #888; }
     .ing-row.must-custom  .ing-name { color: #fff; font-weight: 600; }
-
-    /* Dessert must-use states */
     .ing-row.must-baking  { background: #AFA9EC; }
     .ing-row.must-baking  .ing-name { color: #1A1060; font-weight: 600; }
     .ing-row.must-dfruit  { background: #5DCAA5; }
@@ -254,26 +229,15 @@
     .ing-row.must-dflavor .ing-name { color: #4A1500; font-weight: 600; }
     .ing-row.must-dnuts   { background: #FAC765; }
     .ing-row.must-dnuts   .ing-name { color: #4A2E00; font-weight: 600; }
-
     .must-star { font-size: 0.65rem; margin-left: 4px; }
 
-    /* Delete button (custom items) */
-    .ing-row .ing-delete {
-      display: none; font-size: 0.7rem; line-height: 1;
-      padding: 2px 5px; border-radius: 6px; color: #aaa;
-      cursor: pointer; flex-shrink: 0; margin-left: 4px;
-    }
+    /* Delete button */
+    .ing-row .ing-delete { display: none; font-size: 0.7rem; line-height: 1; padding: 2px 5px; border-radius: 6px; color: #aaa; cursor: pointer; flex-shrink: 0; margin-left: 4px; }
     .ing-row:hover .ing-delete { display: inline-block; }
     .ing-row .ing-delete:hover { color: #c0392b; background: rgba(192,57,43,0.08); }
 
-    /* Category-assign button (custom items) */
-    .ing-row .ing-cat-btn {
-      display: flex; align-items: center; gap: 2px;
-      font-size: 0.68rem; color: #bbb; cursor: pointer;
-      padding: 1px 5px 1px 0; margin-right: 2px; flex-shrink: 0;
-      border-radius: 5px; transition: color 0.1s;
-      white-space: nowrap; position: relative;
-    }
+    /* Category-assign button */
+    .ing-row .ing-cat-btn { display: flex; align-items: center; gap: 2px; font-size: 0.68rem; color: #bbb; cursor: pointer; padding: 1px 5px 1px 0; margin-right: 2px; flex-shrink: 0; border-radius: 5px; transition: color 0.1s; white-space: nowrap; position: relative; }
     .ing-row .ing-cat-btn:hover { color: #888; }
     .ing-cat-arrow { font-size: 0.5rem; }
 
@@ -283,13 +247,7 @@
     .custom-in-col-line { flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
 
     /* Expand bar */
-    .expand-bar {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      margin: 8px 0 0; padding: 10px 0;
-      border-radius: 0 0 16px 16px;
-      border: 1.5px solid #e8e8e4; border-top: none;
-      background: #fff; cursor: pointer; transition: background 0.15s;
-    }
+    .expand-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0 0; padding: 10px 0; border-radius: 0 0 16px 16px; border: 1.5px solid #e8e8e4; border-top: none; background: #fff; cursor: pointer; transition: background 0.15s; }
     .expand-bar:hover { background: #f5f5f2; }
     .expand-bar span { font-size: 0.78rem; color: #888; }
     .expand-arr { font-size: 0.85rem; color: #aaa; display: inline-block; }
@@ -308,63 +266,29 @@
     }
 
     /* Category-assignment popover */
-    .cat-popover {
-      display: none; position: absolute; top: calc(100% + 4px); left: 0;
-      background: #fff; border: 1px solid #e0e0e0; border-radius: 14px;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.12); z-index: 300;
-      overflow: hidden; min-width: 170px;
-    }
+    .cat-popover { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #fff; border: 1px solid #e0e0e0; border-radius: 14px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); z-index: 300; overflow: hidden; min-width: 170px; }
     .cat-popover.open { display: block; }
-    .cat-popover-item {
-      padding: 9px 16px; font-size: 0.85rem; cursor: pointer;
-      display: flex; align-items: center; gap: 8px; color: #333; white-space: nowrap;
-    }
+    .cat-popover-item { padding: 9px 16px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #333; white-space: nowrap; }
     .cat-popover-item:hover { background: #f5f5f2; }
 
-    /* More options collapsible */
+    /* More options */
     .more-options-wrap { display: flex; justify-content: center; margin: 1.5rem 0 0; }
-    .more-options-toggle {
-      display: inline-flex; align-items: center; gap: 8px;
-      cursor: pointer; user-select: none;
-      padding: 9px 22px; border-radius: 24px;
-      border: 1.5px solid #d0d0d0; background: #fff;
-      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .more-options-toggle:hover {
-      border-color: #bbb; background: #f9f9f7;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.09);
-    }
-    .more-options-toggle.open {
-      border-color: #aaa; background: #f5f5f2;
-    }
+    .more-options-toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 9px 22px; border-radius: 24px; border: 1.5px solid #d0d0d0; background: #fff; transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .more-options-toggle:hover { border-color: #bbb; background: #f9f9f7; box-shadow: 0 2px 8px rgba(0,0,0,0.09); }
+    .more-options-toggle.open { border-color: #aaa; background: #f5f5f2; }
     body.dessert-mode .more-options-toggle { border-color: #CCC8EE; }
     body.dessert-mode .more-options-toggle:hover { border-color: #AFA9EC; }
     body.dessert-mode .more-options-toggle.open { border-color: #AFA9EC; background: #F0EFFE; }
-    .more-options-label {
-      font-size: 0.85rem; font-weight: 600; color: #555;
-      transition: color 0.15s;
-    }
+    .more-options-label { font-size: 0.85rem; font-weight: 600; color: #555; transition: color 0.15s; }
     .more-options-toggle:hover .more-options-label { color: #333; }
-    .more-options-arr {
-      font-size: 0.7rem; color: #999; display: inline-block;
-      transition: transform 0.2s, color 0.15s;
-    }
+    .more-options-arr { font-size: 0.7rem; color: #999; display: inline-block; transition: transform 0.2s, color 0.15s; }
     .more-options-arr.open { transform: rotate(180deg); }
-    .more-options-body {
-      display: none; margin-top: 1.25rem; margin-bottom: 1.75rem;
-    }
+    .more-options-body { display: none; margin-top: 1.25rem; margin-bottom: 1.75rem; }
     .more-options-body.open { display: block; }
 
     /* Extra request field */
     .extra-request-wrap { margin-bottom: 1.25rem; }
-    .extra-request-wrap textarea {
-      width: 100%; padding: 0.7rem 1rem; border-radius: 14px;
-      border: 1.5px solid #e0e0e0; font-size: 0.88rem;
-      font-family: inherit; background: #fff; color: #1a1a1a;
-      resize: none; outline: none; line-height: 1.5;
-      transition: border-color 0.15s;
-    }
+    .extra-request-wrap textarea { width: 100%; padding: 0.7rem 1rem; border-radius: 14px; border: 1.5px solid #e0e0e0; font-size: 0.88rem; font-family: inherit; background: #fff; color: #1a1a1a; resize: none; outline: none; line-height: 1.5; transition: border-color 0.15s; }
     .extra-request-wrap textarea:focus { border-color: #639922; }
     body.dessert-mode .extra-request-wrap textarea:focus { border-color: #7F77DD; }
     .extra-request-wrap textarea::placeholder { color: #bbb; }
@@ -375,11 +299,7 @@
     .mood-title { font-size: 0.72rem; font-weight: 600; color: #aaa; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
     body.dessert-mode .mood-title { color: #7F77DD; }
     .mood-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-    .m-chip {
-      padding: 7px 18px; border-radius: 20px; font-size: 0.82rem;
-      cursor: pointer; border: 1.5px solid #e0e0e0; color: #888;
-      background: #f5f5f2; transition: all 0.12s; user-select: none;
-    }
+    .m-chip { padding: 7px 18px; border-radius: 20px; font-size: 0.82rem; cursor: pointer; border: 1.5px solid #e0e0e0; color: #888; background: #f5f5f2; transition: all 0.12s; user-select: none; }
     .m-chip:hover { border-color: #ccc; color: #555; }
     .m-chip.fl-on { background: #FEF9EC; border-color: #EF9F27; color: #633806; }
     .m-chip.cu-on { background: #E6F1FB; border-color: #378ADD; color: #0C447C; }
@@ -388,13 +308,7 @@
 
     /* CTA */
     .cta-wrap { text-align: center; margin-top: 1.75rem; }
-    .cta {
-      display: inline-block; padding: 0.9rem 3rem;
-      background: #3B6D11; color: #fff; border: none; border-radius: 40px;
-      font-size: 1rem; font-weight: 600; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(99,153,34,0.28);
-      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-    }
+    .cta { display: inline-block; padding: 0.9rem 3rem; background: #3B6D11; color: #fff; border: none; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(99,153,34,0.28); transition: background 0.15s, transform 0.1s, box-shadow 0.15s; }
     .cta:hover { background: #27500A; box-shadow: 0 6px 20px rgba(99,153,34,0.35); }
     .cta:active { transform: scale(0.98); }
     .cta:disabled { background: #aaa; box-shadow: none; cursor: default; }
@@ -408,27 +322,15 @@
     body.dessert-mode .dot { background: #534AB7; }
     .dot:nth-child(2) { animation-delay: 0.2s; }
     .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.15; transform: scale(0.85); }
-      50%       { opacity: 1;    transform: scale(1.1);  }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 0.15; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
     .loading-text { font-size: 1.15rem; color: #888; font-style: italic; }
 
     /* Results */
     .results-nav { display: flex; align-items: center; justify-content: flex-start; margin-bottom: 1.5rem; }
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-size: 0.85rem; color: #888; cursor: pointer;
-      padding: 6px 14px; border-radius: 20px;
-      border: 1px solid #e0e0e0; background: #fff; transition: background 0.12s;
-    }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #888; cursor: pointer; padding: 6px 14px; border-radius: 20px; border: 1px solid #e0e0e0; background: #fff; transition: background 0.12s; }
     .back-btn:hover { background: #f5f5f2; }
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
-    .recipe-card {
-      background: #fff; border-radius: 20px; border: 1.5px solid #e8e8e4;
-      padding: 1.25rem; display: flex; flex-direction: column; gap: 10px;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
+    .recipe-card { background: #fff; border-radius: 20px; border: 1.5px solid #e8e8e4; padding: 1.25rem; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.15s, box-shadow 0.15s; }
     .recipe-card:hover { border-color: #ccc; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
     .recipe-card-emoji { font-size: 1.75rem; }
     .recipe-card-name { font-size: 1rem; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
@@ -446,72 +348,46 @@
 
     /* Recipe checklist */
     .recipe-check-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-    .recipe-check-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 5px 6px; border-radius: 8px; cursor: pointer;
-      transition: background 0.1s; user-select: none;
-    }
+    .recipe-check-item { display: flex; align-items: flex-start; gap: 10px; padding: 5px 6px; border-radius: 8px; cursor: pointer; transition: background 0.1s; user-select: none; }
     .recipe-check-item:hover { background: rgba(0,0,0,0.03); }
     .recipe-check-item.checked .check-text { color: #c0c0c0; text-decoration: line-through; }
-    .check-box {
-      width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #d0d0d0;
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      margin-top: 2px; background: #fff; transition: border-color 0.12s, background 0.12s;
-    }
+    .check-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #d0d0d0; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 2px; background: #fff; transition: border-color 0.12s, background 0.12s; }
     .recipe-check-item.checked .check-box { background: #639922; border-color: #639922; }
     body.dessert-mode .recipe-check-item.checked .check-box { background: #534AB7; border-color: #534AB7; }
     .check-tick { display: none; color: #fff; font-size: 10px; font-weight: 700; line-height: 1; }
     .recipe-check-item.checked .check-tick { display: block; }
     .check-text { font-size: 0.875rem; color: #444; line-height: 1.6; }
     .check-step-num { font-size: 0.68rem; font-weight: 700; color: #bbb; min-width: 16px; text-align: right; margin-top: 3px; flex-shrink: 0; }
-    .recipe-checklist-hint {
-      font-size: 0.74rem; color: #bbb; text-align: center;
-      padding: 6px 4px 0; display: flex; align-items: center; justify-content: center; gap: 5px;
-      transition: opacity 0.3s;
-    }
+    .recipe-checklist-hint { font-size: 0.74rem; color: #bbb; text-align: center; padding: 6px 4px 0; display: flex; align-items: center; justify-content: center; gap: 5px; transition: opacity 0.3s; }
 
-    /* Mobile (<=640px) */
+    /* Mobile */
     @media (max-width: 640px) {
       .container { padding: 1.25rem 1rem 2.5rem; }
       .hero h1 { font-size: 1.5rem; }
       .desktop-only { display: none; }
       .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
-      .cat-btn {
-        border-radius: 18px; border: 2px solid transparent;
-        padding: 14px 12px; cursor: pointer; position: relative;
-        transition: transform 0.1s; min-height: 100px;
-      }
+      .cat-btn { border-radius: 18px; border: 2px solid transparent; padding: 14px 12px; cursor: pointer; position: relative; transition: transform 0.1s; min-height: 100px; }
       .cat-btn:active { transform: scale(0.97); }
-
-      /* Savory mobile */
       .cat-btn.pantry  { border-color: rgba(250,199,101,0.6); background: linear-gradient(145deg, #FEF9EC, #fff); }
       .cat-btn.produce { border-color: rgba(93,202,165,0.6);  background: linear-gradient(145deg, #EDFAF3, #fff); }
       .cat-btn.flavor  { border-color: rgba(175,169,236,0.6); background: linear-gradient(145deg, #F5F0FE, #fff); }
       .cat-btn.grains  { border-color: rgba(240,155,123,0.6); background: linear-gradient(145deg, #FFF0E8, #fff); }
-
-      /* Dessert mobile */
       .cat-btn.baking  { border-color: rgba(175,169,236,0.6); background: linear-gradient(145deg, #F0EFFE, #fff); }
       .cat-btn.dfruit  { border-color: rgba(93,202,165,0.6);  background: linear-gradient(145deg, #EDFAF3, #fff); }
       .cat-btn.dflavor { border-color: rgba(240,155,123,0.6); background: linear-gradient(145deg, #FFF0E8, #fff); }
       .cat-btn.dnuts   { border-color: rgba(250,199,101,0.6); background: linear-gradient(145deg, #FEF9EC, #fff); }
-
       .cat-btn-icon    { font-size: 1.4rem; margin-bottom: 5px; display: block; }
       .cat-btn-name    { font-size: 0.875rem; font-weight: 600; color: #1a1a1a; display: block; margin-bottom: 2px; }
       .cat-btn-preview { font-size: 0.7rem; color: #888; display: block; line-height: 1.4; }
       .cat-badge { position: absolute; top: 9px; right: 9px; font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; background: #f0f0ec; color: #888; }
-
-      /* Savory badges */
       .cat-badge.pantry-has  { background: #FFF4D6; color: #7A5200; }
       .cat-badge.produce-has { background: #DCF4E8; color: #1A6639; }
       .cat-badge.flavor-has  { background: #EAE6FF; color: #3D2D99; }
       .cat-badge.grains-has  { background: #FFE8D6; color: #7A3300; }
-
-      /* Dessert badges */
       .cat-badge.baking-has  { background: #EAE6FF; color: #3D2D99; }
       .cat-badge.dfruit-has  { background: #DCF4E8; color: #1A6639; }
       .cat-badge.dflavor-has { background: #FFE8D6; color: #7A3300; }
       .cat-badge.dnuts-has   { background: #FFF4D6; color: #7A5200; }
-
       .hint-reset-row { display: none; }
       .m-chip { padding: 6px 13px; font-size: 0.78rem; }
       .mood-row { gap: 1rem; }
@@ -520,86 +396,67 @@
     }
     @media (min-width: 641px) { .mobile-only { display: none; } }
 
-		/* Footer */
-    .site-footer {
-      text-align: center; padding: 2rem 1rem 1.5rem; margin-top: 1rem;
-      border-top: 1px solid #e8e8e4;
-    }
+    /* Footer */
+    .site-footer { text-align: center; padding: 2rem 1rem 1.5rem; margin-top: 1rem; border-top: 1px solid #e8e8e4; }
     .site-footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
-    .footer-link {
-      font-size: 0.78rem; color: #bbb; cursor: pointer; background: none; border: none;
-      padding: 0; text-decoration: underline; text-underline-offset: 3px;
-      transition: color 0.12s;
-    }
+    .footer-link { font-size: 0.78rem; color: #bbb; cursor: pointer; background: none; border: none; padding: 0; text-decoration: underline; text-underline-offset: 3px; transition: color 0.12s; }
     .footer-link:hover { color: #888; }
 
     /* Info overlays */
-    .info-overlay {
-      display: none; position: fixed; inset: 0; z-index: 500;
-      background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-start;
-      padding: 1.5rem 1rem;
-    }
+    .info-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-start; padding: 1.5rem 1rem; }
     .info-overlay.open { display: flex; }
-    .info-panel {
-      background: #fff; border-radius: 22px; padding: 2rem 2rem 2.5rem;
-      width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto;
-      position: relative;
-    }
-    .info-panel-close {
-      position: sticky; top: 0; float: right; font-size: 1.1rem; color: #bbb;
-      cursor: pointer; padding: 0 0 8px 12px; line-height: 1;
-    }
+    .info-panel { background: #fff; border-radius: 22px; padding: 2rem 2rem 2.5rem; width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto; position: relative; }
+    .info-panel-close { position: sticky; top: 0; float: right; font-size: 1.1rem; color: #bbb; cursor: pointer; padding: 0 0 8px 12px; line-height: 1; }
     .info-panel-close:hover { color: #555; }
-    .info-panel h2 {
-      font-size: 1.25rem; font-weight: 700; color: #1a1a1a;
-      margin-bottom: 1.25rem; line-height: 1.3;
-    }
-    .info-panel h3 {
-      font-size: 0.85rem; font-weight: 700; color: #444;
-      margin: 1.25rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.06em;
-    }
+    .info-panel h2 { font-size: 1.25rem; font-weight: 700; color: #1a1a1a; margin-bottom: 1.25rem; line-height: 1.3; }
+    .info-panel h3 { font-size: 0.85rem; font-weight: 700; color: #444; margin: 1.25rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; }
     .info-panel p, .info-panel li { font-size: 0.88rem; color: #555; line-height: 1.75; }
     .info-panel ul { padding-left: 1.25rem; margin: 0.25rem 0; }
     .info-panel a { color: #639922; text-decoration: underline; text-underline-offset: 2px; }
     body.dessert-mode .info-panel a { color: #534AB7; }
-    .info-lang-toggle { display: flex; gap: 8px; margin-bottom: 1.5rem; }
-    .info-lang-btn {
-      padding: 5px 16px; border-radius: 20px; border: 1.5px solid #e0e0e0;
-      background: #f5f5f2; font-size: 0.78rem; font-weight: 600; color: #888;
-      cursor: pointer; transition: all 0.12s;
-    }
+    .info-lang-toggle { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .info-lang-btn { padding: 5px 16px; border-radius: 20px; border: 1.5px solid #e0e0e0; background: #f5f5f2; font-size: 0.78rem; font-weight: 600; color: #888; cursor: pointer; transition: all 0.12s; }
     .info-lang-btn.active { border-color: #aaa; background: #1a1a1a; color: #fff; }
     .info-lang-content { display: none; }
     .info-lang-content.active { display: block; }
     .info-divider { height: 1px; background: #e8e8e4; margin: 1.5rem 0; }
 
+    .btn-copy-recipe { padding: 9px 14px; border-radius: 14px; border: 1px solid #e0e0e0; font-size: 0.82rem; cursor: pointer; background: #fff; color: #666; transition: background 0.12s, color 0.12s; white-space: nowrap; flex-shrink: 0; }
+    .btn-copy-recipe:hover { background: #f5f5f2; }
+    .btn-copy-recipe.copied { background: #EAF3DE; color: #3B6D11; border-color: #b2d98a; }
+    body.dessert-mode .btn-copy-recipe.copied { background: #EAE6FF; color: #3C3489; border-color: #AFA9EC; }
+
     /* Modal */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45); z-index: 200;
-      justify-content: center; align-items: flex-start; padding-top: 1.5rem;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; justify-content: center; align-items: flex-start; padding-top: 1.5rem; }
     .modal-overlay.open { display: flex; }
-    .modal {
-      background: #fff; border-radius: 22px;
-      padding: 1.25rem 1rem 1.5rem;
-      width: 90vw; max-width: 360px; max-height: 80vh;
-      display: flex; flex-direction: column;
-    }
+    .modal { background: #fff; border-radius: 22px; padding: 1.25rem 1rem 1.5rem; width: 90vw; max-width: 360px; max-height: 80vh; display: flex; flex-direction: column; }
     .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-shrink: 0; }
     .modal-title { font-size: 1.05rem; font-weight: 600; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
     .modal-close { font-size: 1.25rem; cursor: pointer; color: #aaa; padding: 2px 8px; line-height: 1; }
     .modal-body { overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
     .modal-body .ing-row .ing-name { font-size: 0.95rem; }
+
+    /* Hero */
+    .hero { text-align: center; margin-bottom: 2rem; }
+    .hero h1 { font-size: 2rem; font-weight: 600; color: #1a1a1a; letter-spacing: -0.02em; margin-bottom: 0.4rem; cursor: pointer; }
+    .hero p { font-size: 1rem; color: #666; }
   </style>
 </head>
 <body>
 
-  <!-- Mode toggle: fixed top-right, like a light/dark switch -->
-  <div class="mode-toggle-fixed">
+  <!-- Top-right fixed bar: mode toggle + language selector -->
+  <div class="topright-bar">
     <div class="mode-toggle">
       <div class="mode-btn savory-active" id="modeBtnSavory">savory</div>
       <div class="mode-btn" id="modeBtnDessert">dessert</div>
+    </div>
+    <div class="lang-select-wrap">
+      <select class="lang-select" id="langSelect" aria-label="Language">
+        <option value="en">EN</option>
+        <option value="de">DE</option>
+        <option value="pt">PT</option>
+      </select>
+      <span class="lang-select-arrow">&#9660;</span>
     </div>
   </div>
 
@@ -607,7 +464,7 @@
     <div class="container">
       <div class="hero">
         <h1>From the Cupboard</h1>
-        <p>What&#8217;s in your kitchen?</p>
+        <p id="heroSubtitle">What&#8217;s in your kitchen?</p>
       </div>
 
       <div class="search-wrap">
@@ -616,13 +473,13 @@
       </div>
 
       <div class="meal-context-wrap" id="mealContextWrap">
-        <div class="meal-context-label">I&#8217;m looking for</div>
+        <div class="meal-context-label" id="mealContextLabel">I&#8217;m looking for</div>
         <div class="meal-context-chips" id="mealContextChips"></div>
       </div>
 
       <div class="hint-reset-row">
         <div class="hint-reset-spacer"></div>
-        <p class="hint">Tap once to mark as <em>available</em> &nbsp;&middot;&nbsp; Tap again to mark as <strong>must use</strong> &nbsp;&middot;&nbsp; Tap again to remove</p>
+        <p class="hint" id="hintText">Tap once to mark as <em>available</em> &nbsp;&middot;&nbsp; Tap again to mark as <strong>must use</strong> &nbsp;&middot;&nbsp; Tap again to remove</p>
         <div class="hint-reset-right"><button class="reset-btn" id="resetBtn">Reset to defaults</button></div>
       </div>
 
@@ -639,13 +496,13 @@
       </div>
 
       <div class="custom-strip" id="customStrip">
-        <div class="custom-strip-label">Added ingredients</div>
+        <div class="custom-strip-label" id="customStripLabel">Added ingredients</div>
         <div class="custom-strip-body" id="customStripBody"></div>
       </div>
 
       <div class="more-options-wrap">
         <div class="more-options-toggle" id="moreOptionsToggle">
-          <span class="more-options-label">More options</span>
+          <span class="more-options-label" id="moreOptionsLabel">More options</span>
           <span class="more-options-arr" id="moreOptionsArr">&#9660;</span>
         </div>
       </div>
@@ -669,11 +526,11 @@
       <div class="cta-wrap">
         <button class="cta" id="findBtn">Find recipe ideas &nbsp;&#8594;</button>
       </div>
-    <footer class="site-footer">
+      <footer class="site-footer">
         <div class="site-footer-links">
-          <button class="footer-link" onclick="openInfoOverlay('about')">About</button>
+          <button class="footer-link" id="footerAboutBtn" onclick="openInfoOverlay('about')">About</button>
           <button class="footer-link" onclick="openInfoOverlay('impressum')">Impressum</button>
-          <button class="footer-link" onclick="openInfoOverlay('datenschutz')">Datenschutz / Privacy</button>
+          <button class="footer-link" id="footerDatenschutzBtn" onclick="openInfoOverlay('datenschutz')">Datenschutz / Privacy</button>
         </div>
       </footer>
     </div>
@@ -683,15 +540,42 @@
   <div class="info-overlay" id="overlay-about">
     <div class="info-panel">
       <span class="info-panel-close" onclick="closeInfoOverlay('about')">&#10005;</span>
-      <h2>About From the Cupboard</h2>
-      <h3>What is this?</h3>
-      <p>From the Cupboard is a plant-based recipe idea generator. You select the ingredients you actually have at home, optionally set a flavor mood or cuisine preference, and the app suggests six recipe ideas. You can then get a full recipe generated on the spot, or search for human-made versions online.</p>
-      <h3>How it works</h3>
-      <p>The ingredient selection and all interface logic runs directly in your browser &#8212; no account, no tracking. When you ask for recipe suggestions, your ingredient list is sent to a language model (currently a large open-source LLM via the Groq API), which generates ideas and recipes based strictly on what you have.</p>
-      <p>The backend is a small Cloudflare Worker that acts as a proxy, so no API key ever appears in the page source. Everything else &#8212; the UI, ingredient data, and state management &#8212; is plain HTML, CSS, and JavaScript, hosted on GitHub Pages.</p>
-      <h3>Who made it?</h3>
-      <p>This is a personal project by <strong>Tom Offrede</strong>, a linguist and researcher. It was built as an experiment in vibe-coding &#8212; iterating quickly on ideas with AI assistance &#8212; and as a genuinely useful tool for everyday plant-based cooking.</p>
-      <p>Source code: <a href="https://github.com/tomoffride/FromTheCupboard" target="_blank" rel="noopener">github.com/tomoffride/FromTheCupboard</a></p>
+      <!-- EN -->
+      <div class="info-lang-content" id="about-en">
+        <h2>About From the Cupboard</h2>
+        <h3>What this is</h3>
+        <p>From the Cupboard is a recipe idea generator. You select the ingredients you have at home, optionally set a flavor mood or cuisine preference, and the app suggests recipe ideas. You can then get a full recipe generated on the spot, or search for human-made versions online.</p>
+        <h3>How it works</h3>
+        <p>The ingredient selection and all interface logic runs directly in your browser &#8212; no account or tracking. When you ask for recipe suggestions, your ingredient list is sent to a language model (currently a large open-source LLM via the Groq API), which generates ideas and recipes based strictly on what you have.</p>
+        <p>The backend is a small Cloudflare Worker that acts as a proxy, so no API key ever appears in the page source. Everything else &#8212; the UI, ingredient data, and state management &#8212; is plain HTML, CSS, and JavaScript, hosted on GitHub Pages.</p>
+        <h3>Who made it</h3>
+        <p>This is a personal project by Tom Offrede. It was built as an experiment in vibe-coding and from a desire to have a sous-chef in my kitchen.</p>
+        <p>Source code: <a href="https://github.com/tomoffrede/FromTheCupboard" target="_blank" rel="noopener">github.com/tomoffrede/FromTheCupboard</a></p>
+      </div>
+      <!-- DE -->
+      <div class="info-lang-content" id="about-de">
+        <h2>&#220;ber From the Cupboard</h2>
+        <h3>Was ist das?</h3>
+        <p>From the Cupboard ist ein Rezeptideengenerator. Du w&#228;hlst die Zutaten aus, die du zuhause hast, kannst optional eine Geschmacksrichtung oder K&#252;che angeben, und die App schl&#228;gt Rezeptideen vor. Danach kannst du ein vollst&#228;ndiges Rezept generieren lassen oder nach menschengemachten Versionen online suchen.</p>
+        <h3>Wie funktioniert es?</h3>
+        <p>Die Zutatenauswahl und die gesamte Interface-Logik laufen direkt in deinem Browser &#8212; kein Konto oder Tracking. Wenn du Rezeptvorschl&#228;ge anforderst, wird deine Zutatenliste an ein Sprachmodell gesendet (derzeit ein gro&#223;es Open-Source-LLM via Groq API), das Ideen und Rezepte strikt auf Basis deiner Zutaten generiert.</p>
+        <p>Das Backend ist ein kleiner Cloudflare Worker, der als Proxy fungiert, sodass kein API-Schl&#252;ssel im Seitenquellcode erscheint. Alles andere &#8212; UI, Zutatendaten und Zustandsverwaltung &#8212; ist reines HTML, CSS und JavaScript, gehostet auf GitHub Pages.</p>
+        <h3>Wer hat es gemacht?</h3>
+        <p>Dies ist ein pers&#246;nliches Projekt von Tom Offrede. Es entstand als Experiment im Vibe-Coding und aus dem Wunsch heraus, einen Sous-Chef in meiner K&#252;che zu haben.</p>
+        <p>Quellcode: <a href="https://github.com/tomoffrede/FromTheCupboard" target="_blank" rel="noopener">github.com/tomoffrede/FromTheCupboard</a></p>
+      </div>
+      <!-- PT -->
+      <div class="info-lang-content" id="about-pt">
+        <h2>Sobre o From the Cupboard</h2>
+        <h3>O que &#233;?</h3>
+        <p>From the Cupboard &#233; um gerador de ideias de receitas. Voc&#234; seleciona os ingredientes que tem em casa, define opcionalmente um sabor ou culin&#225;ria preferida, e o app sugere ideias de receitas. Depois, voc&#234; pode gerar uma receita completa na hora ou buscar vers&#245;es criadas por humanos online.</p>
+        <h3>Como funciona?</h3>
+        <p>A sele&#231;&#227;o de ingredientes e toda a l&#243;gica de interface rodam diretamente no seu navegador &#8212; sem conta nem rastreamento. Quando voc&#234; pede sugest&#245;es de receitas, sua lista de ingredientes &#233; enviada a um modelo de linguagem (atualmente um grande LLM de c&#243;digo aberto via API Groq), que gera ideias e receitas estritamente com base no que voc&#234; tem.</p>
+        <p>O backend &#233; um pequeno Cloudflare Worker que age como proxy, de modo que nenhuma chave de API aparece no c&#243;digo-fonte da p&#225;gina. Todo o resto &#8212; UI, dados de ingredientes e gest&#227;o de estado &#8212; &#233; HTML, CSS e JavaScript puro, hospedado no GitHub Pages.</p>
+        <h3>Quem fez?</h3>
+        <p>Este &#233; um projeto pessoal de Tom Offrede. Foi criado como um experimento de vibe-coding e do desejo de ter um sous-chef em casa.</p>
+        <p>C&#243;digo-fonte: <a href="https://github.com/tomoffrede/FromTheCupboard" target="_blank" rel="noopener">github.com/tomoffrede/FromTheCupboard</a></p>
+      </div>
     </div>
   </div>
 
@@ -703,6 +587,7 @@
       <div class="info-lang-toggle">
         <button class="info-lang-btn active" onclick="switchInfoLang('impressum','de',this)">Deutsch</button>
         <button class="info-lang-btn" onclick="switchInfoLang('impressum','en',this)">English</button>
+        <button class="info-lang-btn" onclick="switchInfoLang('impressum','pt',this)">Portugu&#234;s</button>
       </div>
       <div class="info-lang-content active" id="impressum-de">
         <h3>Angaben gem&auml;&szlig; &sect; 5 TMG</h3>
@@ -722,6 +607,15 @@
         <h3>External links</h3>
         <p>This website contains links to external services (Ecosia, GitHub). Their respective operators are responsible for the content of those pages.</p>
       </div>
+      <div class="info-lang-content" id="impressum-pt">
+        <h3>Informa&#231;&#245;es conforme &sect; 5 TMG</h3>
+        <p>Tom Offrede<br>Frankfurt am Main, Alemanha<br>E-mail: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+        <div class="info-divider"></div>
+        <h3>Isen&#231;&#227;o de responsabilidade</h3>
+        <p>Este &#233; um projeto privado e n&#227;o comercial. As sugest&#245;es de receitas s&#227;o geradas por um modelo de linguagem de IA e fornecidas sem garantia. N&#227;o &#233; aceita qualquer responsabilidade pela integridade, exatid&#227;o ou adequa&#231;&#227;o do conte&#250;do.</p>
+        <h3>Links externos</h3>
+        <p>Este site cont&#233;m links para servi&#231;os externos (Ecosia, GitHub). Os respectivos operadores s&#227;o respons&#225;veis pelo conte&#250;do dessas p&#225;ginas.</p>
+      </div>
     </div>
   </div>
 
@@ -733,6 +627,7 @@
       <div class="info-lang-toggle">
         <button class="info-lang-btn active" onclick="switchInfoLang('datenschutz','de',this)">Deutsch</button>
         <button class="info-lang-btn" onclick="switchInfoLang('datenschutz','en',this)">English</button>
+        <button class="info-lang-btn" onclick="switchInfoLang('datenschutz','pt',this)">Portugu&#234;s</button>
       </div>
       <div class="info-lang-content active" id="datenschutz-de">
         <h3>Keine Tracking-Tools</h3>
@@ -758,10 +653,20 @@
         <h3>Contact</h3>
         <p>For privacy-related questions: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
       </div>
+      <div class="info-lang-content" id="datenschutz-pt">
+        <h3>Sem rastreamento</h3>
+        <p>Este site n&#227;o usa cookies, ferramentas de an&#225;lise nem rastreamento. Nenhum comportamento do usu&#225;rio &#233; registrado ou compartilhado com terceiros.</p>
+        <h3>Armazenamento local</h3>
+        <p>O app armazena suas sele&#231;&#245;es de ingredientes e configura&#231;&#245;es exclusivamente no localStorage do seu navegador. Esses dados nunca saem do seu dispositivo e s&#243; voc&#234; tem acesso a eles. Voc&#234; pode exclu&#237;-los a qualquer momento usando o bot&#227;o de redefinir ou as configura&#231;&#245;es do navegador.</p>
+        <h3>Consultas de IA</h3>
+        <p>Quando voc&#234; solicita sugest&#245;es de receitas, sua lista de ingredientes &#233; enviada como texto a um Cloudflare Worker, que a encaminha para a API Groq. Nenhum dado pessoal &#233; transmitido. A pol&#237;tica de privacidade da Groq se aplica ao processamento dessas solicita&#231;&#245;es.</p>
+        <h3>Hospedagem</h3>
+        <p>Este site &#233; hospedado via GitHub Pages. O GitHub pode registrar dados t&#233;cnicos de acesso (ex.: endere&#231;o IP). A pol&#237;tica de privacidade do GitHub se aplica.</p>
+        <h3>Contato</h3>
+        <p>Para d&#250;vidas sobre privacidade: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+      </div>
     </div>
   </div>
-
-  <div class="modal-overlay" id="modalOverlay">
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal" id="modal">
@@ -779,7 +684,7 @@
       <div class="dot-row">
         <div class="dot"></div><div class="dot"></div><div class="dot"></div>
       </div>
-      <div class="loading-text">Rummaging the cupboard...</div>
+      <div class="loading-text" id="loadingText">Rummaging the cupboard...</div>
     </div>
   </div>
 
@@ -827,7 +732,8 @@
   var MEAL_CONTEXT_OPTIONS = ['full meal', 'side dish', 'starter', 'snack', 'finger food'];
 
   // STATE
-  var currentMode  = 'savory';   // 'savory' | 'dessert'
+  var currentMode  = 'savory';
+  var currentLang  = 'en';
   var mustSet      = new Set();
   var customItems  = [];
   var expanded     = false;
@@ -840,12 +746,10 @@
   var selectedMealContexts   = new Set(['full meal']);
   var state = {};
 
-  // VIEW STATE
   var viewMode               = 'ideas';
   var lastRecipes            = null;
   var checklistHintDismissed = false;
 
-  // LOCALSTORAGE KEYS
   var LS_PANTRY         = 'ftc_pantry';
   var LS_FLAVOR         = 'ftc_flavor';
   var LS_GRAINS         = 'ftc_grains';
@@ -857,11 +761,93 @@
   var LS_CUISINES       = 'ftc_cuisines';
   var LS_MEAL_CONTEXT   = 'ftc_meal_context';
   var LS_MODE           = 'ftc_mode';
+  var LS_LANG           = 'ftc_lang';
   var LS_DESSERT_BAKING = 'ftc_dessert_baking';
   var LS_DESSERT_DNUTS  = 'ftc_dessert_dnuts';
   var LS_DESSERT_DFLAVOR= 'ftc_dessert_dflavor';
   var LS_DESSERT_FLAVORS= 'ftc_dessert_flavors';
   var LS_DESSERT_STYLES = 'ftc_dessert_styles';
+
+  // ---------------------------------------------------------------------------
+  // TRANSLATION HELPERS
+  // ---------------------------------------------------------------------------
+
+  function t(key) {
+    var tr = UI_TRANSLATIONS[currentLang];
+    if (tr && tr[key] !== undefined) return tr[key];
+    return UI_TRANSLATIONS['en'][key] || key;
+  }
+
+  function tIngredient(name) {
+    if (currentLang === 'en') return name;
+    var tr = INGREDIENT_TRANSLATIONS[currentLang];
+    if (tr && tr[name] !== undefined) return tr[name];
+    return name;
+  }
+
+  function tCategory(label) {
+    if (currentLang === 'en') return label;
+    var tr = CATEGORY_TRANSLATIONS[currentLang];
+    if (tr && tr[label] !== undefined) return tr[label];
+    return label;
+  }
+
+  function tChip(chip) {
+    if (currentLang === 'en') return chip;
+    var tr = CHIP_TRANSLATIONS[currentLang];
+    if (tr && tr[chip] !== undefined) return tr[chip];
+    return chip;
+  }
+
+  // Apply all static UI text strings after a language change
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    document.getElementById('heroSubtitle').textContent    = t('subtitle');
+    document.getElementById('searchInput').placeholder     = t('searchPlaceholder');
+    document.getElementById('mealContextLabel').textContent = t('lookingFor');
+    document.getElementById('hintText').innerHTML           = t('hintText');
+    document.getElementById('resetBtn').textContent         = t('resetBtn');
+    document.getElementById('expandLabel').textContent      = expanded ? t('expandLess') : t('expandMore');
+    document.getElementById('customStripLabel').textContent = t('addedIngredients');
+    document.getElementById('moreOptionsLabel').textContent = t('moreOptions');
+    document.getElementById('extraRequestInput').placeholder = t('extraPlaceholder');
+    document.getElementById('flavorMoodTitle').textContent  = t('flavorMoodTitle');
+    document.getElementById('cuisineTitle').textContent     = currentMode === 'dessert' ? t('dessertCuisineTitle') : t('cuisineTitle');
+    document.getElementById('findBtn').innerHTML            = t('findBtn');
+    document.getElementById('footerAboutBtn').textContent   = t('footerAbout');
+    document.getElementById('footerDatenschutzBtn').textContent = t('footerDatenschutz');
+    document.getElementById('modeBtnSavory').textContent    = t('savoryBtn');
+    document.getElementById('modeBtnDessert').textContent   = t('dessertBtn');
+    document.getElementById('backBtnLabel').textContent     = viewMode === 'recipe' ? t('backToIdeas') : t('changeIngredients');
+    document.getElementById('loadingText').textContent      = t('loadingRummaging');
+
+    // Sync About overlay language with app language
+    syncAboutLang();
+  }
+
+  // Show the right About content panel for the current language
+  function syncAboutLang() {
+    var panel = document.getElementById('overlay-about');
+    panel.querySelectorAll('.info-lang-content').forEach(function(c){ c.classList.remove('active'); });
+    var target = document.getElementById('about-' + currentLang);
+    if (target) target.classList.add('active');
+  }
+
+  // ---------------------------------------------------------------------------
+  // LANGUAGE SWITCH
+  // ---------------------------------------------------------------------------
+
+  function switchLang(lang) {
+    if (lang === currentLang) return;
+    currentLang = lang;
+    localStorage.setItem(LS_LANG, lang);
+    applyTranslations();
+    renderMoodChips();
+    renderMealContextChips();
+    renderAll();
+  }
+
+  // ---------------------------------------------------------------------------
 
   function todayStr() { return new Date().toISOString().slice(0, 10); }
   function markSession() { localStorage.setItem(LS_SESSION, todayStr()); }
@@ -972,6 +958,9 @@
       var savedMode = localStorage.getItem(LS_MODE);
       if (savedMode === 'dessert') { currentMode = 'dessert'; }
 
+      var savedLang = localStorage.getItem(LS_LANG);
+      if (savedLang && UI_TRANSLATIONS[savedLang]) { currentLang = savedLang; }
+
     } catch(e) { console.warn('Could not restore state:', e); }
     markSession();
   }
@@ -1010,10 +999,9 @@
     document.getElementById('modeBtnSavory').className  = 'mode-btn' + (mode === 'savory'  ? ' savory-active'  : '');
     document.getElementById('modeBtnDessert').className = 'mode-btn' + (mode === 'dessert' ? ' dessert-active' : '');
     document.getElementById('mealContextWrap').style.display = mode === 'savory' ? '' : 'none';
-    document.getElementById('flavorMoodTitle').textContent = 'Flavor mood';
-    document.getElementById('cuisineTitle').textContent    = mode === 'dessert' ? 'Style' : 'Cuisine';
+    document.getElementById('cuisineTitle').textContent = mode === 'dessert' ? t('dessertCuisineTitle') : t('cuisineTitle');
     expanded = false;
-    document.getElementById('expandLabel').textContent = 'show more';
+    document.getElementById('expandLabel').textContent = t('expandMore');
     document.getElementById('expandArr').innerHTML     = '&#9660;';
     saveState();
     renderMoodChips();
@@ -1074,7 +1062,8 @@
     MEAL_CONTEXT_OPTIONS.forEach(function(opt) {
       var chip = document.createElement('span');
       chip.className = 'mc-chip' + (selectedMealContexts.has(opt) ? ' mc-on' : '');
-      chip.textContent = opt;
+      chip.textContent = tChip(opt);
+      chip.dataset.value = opt;
       chip.addEventListener('click', function() {
         if (selectedMealContexts.has(opt)) {
           if (selectedMealContexts.size > 1) {
@@ -1098,8 +1087,9 @@
     var row  = document.createElement('div');
     row.className = 'ing-row' + (rc ? ' ' + rc : '');
     row.dataset.name = item.n;
+    var displayName = tIngredient(item.n);
     var ns = fontSize ? ' style="font-size:' + fontSize + '"' : '';
-    row.innerHTML = '<span class="ing-name"' + ns + '>' + item.n + star + '</span>';
+    row.innerHTML = '<span class="ing-name"' + ns + '>' + displayName + star + '</span>';
     row.addEventListener('click', function(e){ e.stopPropagation(); onClick(item.n); });
     return row;
   }
@@ -1124,7 +1114,7 @@
         var catId = entry[0]; var m = entry[1];
         var opt = document.createElement('div');
         opt.className = 'cat-popover-item';
-        opt.innerHTML = m.icon + ' ' + m.label;
+        opt.innerHTML = m.icon + ' ' + tCategory(m.label);
         opt.addEventListener('click', function(e) {
           e.stopPropagation(); closePopover(); assignCustomItemCat(item.n, catId);
         });
@@ -1163,12 +1153,13 @@
   // BUILD SUBCATEGORY HEADER
   function buildSubcatHead(label, forModal, catId) {
     var div = document.createElement('div');
+    var displayLabel = tCategory(label);
     if (forModal) {
       div.className = 'modal-subcat-head modal-subcat-' + catId;
-      div.innerHTML = '<span class="modal-subcat-label">' + label + '</span><span class="modal-subcat-line"></span>';
+      div.innerHTML = '<span class="modal-subcat-label">' + displayLabel + '</span><span class="modal-subcat-line"></span>';
     } else {
       div.className = 'subcat-head';
-      div.innerHTML = '<span class="subcat-label">' + label + '</span><span class="subcat-line"></span>';
+      div.innerHTML = '<span class="subcat-label">' + displayLabel + '</span><span class="subcat-line"></span>';
     }
     return div;
   }
@@ -1212,8 +1203,8 @@
       col.innerHTML =
         '<div class="col-head">' +
           '<div class="col-icon">' + sec.icon + '</div>' +
-          '<div><div class="col-title">' + sec.label + '</div>' +
-          '<div class="col-count">' + selCount + ' selected</div></div>' +
+          '<div><div class="col-title">' + tCategory(sec.label) + '</div>' +
+          '<div class="col-count">' + selCount + t('colCountSuffix') + '</div></div>' +
         '</div>' +
         '<div class="col-divider"></div>' +
         '<div class="col-body" id="col-body-' + id + '"></div>';
@@ -1232,7 +1223,7 @@
         if (categorised.length) {
           var ch = document.createElement('div');
           ch.className = 'custom-in-col-head';
-          ch.innerHTML = '<span class="custom-in-col-label">added</span><span class="custom-in-col-line"></span>';
+          ch.innerHTML = '<span class="custom-in-col-label">' + t('addedSubcatLabel') + '</span><span class="custom-in-col-line"></span>';
           colBody.appendChild(ch);
           categorised.forEach(function(item) {
             colBody.appendChild(buildCustomRow(
@@ -1266,7 +1257,7 @@
 
   function toggleExpand() {
     expanded = !expanded;
-    document.getElementById('expandLabel').textContent = expanded ? 'show less' : 'show more';
+    document.getElementById('expandLabel').textContent = expanded ? t('expandLess') : t('expandMore');
     document.getElementById('expandArr').innerHTML     = expanded ? '&#9650;' : '&#9660;';
     document.getElementById('expandBar').classList.toggle('open', expanded);
     renderDesktop();
@@ -1290,7 +1281,7 @@
       btn.innerHTML =
         '<span class="cat-badge ' + hasCls + '">' + (count ? count + ' \u2713' : '\u2014') + '</span>' +
         '<span class="cat-btn-icon">' + sec.icon + '</span>' +
-        '<span class="cat-btn-name">' + sec.label + '</span>' +
+        '<span class="cat-btn-name">' + tCategory(sec.label) + '</span>' +
         '<span class="cat-btn-preview">' + (preview[id] || '') + '</span>';
       btn.addEventListener('click', function(){ openModal(id); });
       grid.appendChild(btn);
@@ -1300,7 +1291,7 @@
   function openModal(id) {
     activeModal = id;
     var ings = activeIngredients();
-    document.getElementById('modalTitle').innerHTML = ings[id].icon + ' ' + ings[id].label;
+    document.getElementById('modalTitle').innerHTML = ings[id].icon + ' ' + tCategory(ings[id].label);
     renderModalBody();
     document.getElementById('modalOverlay').classList.add('open');
   }
@@ -1327,7 +1318,7 @@
     if (categorised.length) {
       var ch = document.createElement('div');
       ch.className = 'modal-subcat-head modal-subcat-' + id;
-      ch.innerHTML = '<span class="modal-subcat-label" style="color:#bbb">added</span><span class="modal-subcat-line" style="background:rgba(0,0,0,0.08)"></span>';
+      ch.innerHTML = '<span class="modal-subcat-label" style="color:#bbb">' + t('addedSubcatLabel') + '</span><span class="modal-subcat-line" style="background:rgba(0,0,0,0.08)"></span>';
       body.appendChild(ch);
       categorised.forEach(function(item) {
         var row = buildCustomRow(
@@ -1348,6 +1339,8 @@
   }
 
   // SEARCH
+  // Search uses English names for state lookup but shows translated display names.
+  // The search itself matches on English names (canonical keys).
   function allIngredientNames() {
     var savoryNames  = Object.values(INGREDIENTS).reduce(function(acc, s){ return acc.concat(s.items.map(function(i){ return i.n; })); }, []);
     var dessertNames = Object.values(DESSERT_INGREDIENTS).reduce(function(acc, s){ return acc.concat(s.items.map(function(i){ return i.n; })); }, []);
@@ -1362,12 +1355,16 @@
       var v = input.value.trim().toLowerCase();
       if (!v) { drop.classList.remove('open'); return; }
       var allNames = allIngredientNames();
-      var matches = allNames.filter(function(n){ return n.toLowerCase().indexOf(v) !== -1; }).slice(0, 6);
+      // Match on translated display name OR English name
+      var matches = allNames.filter(function(n) {
+        var display = tIngredient(n).toLowerCase();
+        return display.indexOf(v) !== -1 || n.toLowerCase().indexOf(v) !== -1;
+      }).slice(0, 6);
       drop.innerHTML = '';
       matches.forEach(function(name) {
         var el = document.createElement('div');
         el.className = 'search-drop-item';
-        el.textContent = name;
+        el.textContent = tIngredient(name);
         el.addEventListener('click', function() {
           state[name] = true; saveState(); renderAll();
           input.value = ''; drop.classList.remove('open');
@@ -1375,11 +1372,13 @@
         drop.appendChild(el);
       });
       var typed = input.value.trim();
-      var lowerNames = allNames.map(function(n){ return n.toLowerCase(); });
-      if (typed && lowerNames.indexOf(typed.toLowerCase()) === -1) {
+      var lowerNames = allNames.map(function(n){ return tIngredient(n).toLowerCase(); });
+      var lowerEn    = allNames.map(function(n){ return n.toLowerCase(); });
+      var isExisting = lowerNames.indexOf(typed.toLowerCase()) !== -1 || lowerEn.indexOf(typed.toLowerCase()) !== -1;
+      if (typed && !isExisting) {
         var add = document.createElement('div');
         add.className = 'search-drop-item add-custom';
-        add.textContent = '+ Add \u201c' + typed + '\u201d';
+        add.textContent = t('addCustomPrefix') + typed + t('addCustomSuffix');
         add.addEventListener('click', function() {
           var newItem = { n: typed, defaultOn: false, cat: null, on: true };
           customItems.push(newItem);
@@ -1408,7 +1407,8 @@
       FLAVORS.forEach(function(f) {
         var chip = document.createElement('span');
         chip.className = 'm-chip' + (selectedFlavors.has(f) ? ' fl-on' : '');
-        chip.textContent = f;
+        chip.textContent = tChip(f);
+        chip.dataset.value = f;
         chip.addEventListener('click', function() {
           if (selectedFlavors.has(f)) selectedFlavors.delete(f); else selectedFlavors.add(f);
           chip.classList.toggle('fl-on'); saveState();
@@ -1418,7 +1418,8 @@
       CUISINES.forEach(function(c) {
         var chip = document.createElement('span');
         chip.className = 'm-chip' + (selectedCuisines.has(c) ? ' cu-on' : '');
-        chip.textContent = c;
+        chip.textContent = tChip(c);
+        chip.dataset.value = c;
         chip.addEventListener('click', function() {
           if (selectedCuisines.has(c)) selectedCuisines.delete(c); else selectedCuisines.add(c);
           chip.classList.toggle('cu-on'); saveState();
@@ -1429,7 +1430,8 @@
       DESSERT_FLAVORS.forEach(function(f) {
         var chip = document.createElement('span');
         chip.className = 'm-chip' + (selectedDessertFlavors.has(f) ? ' fl-on' : '');
-        chip.textContent = f;
+        chip.textContent = tChip(f);
+        chip.dataset.value = f;
         chip.addEventListener('click', function() {
           if (selectedDessertFlavors.has(f)) selectedDessertFlavors.delete(f); else selectedDessertFlavors.add(f);
           chip.classList.toggle('fl-on'); saveState();
@@ -1439,7 +1441,8 @@
       DESSERT_CUISINES.forEach(function(s) {
         var chip = document.createElement('span');
         chip.className = 'm-chip' + (selectedDessertStyles.has(s) ? ' cu-on' : '');
-        chip.textContent = s;
+        chip.textContent = tChip(s);
+        chip.dataset.value = s;
         chip.addEventListener('click', function() {
           if (selectedDessertStyles.has(s)) selectedDessertStyles.delete(s); else selectedDessertStyles.add(s);
           chip.classList.toggle('cu-on'); saveState();
@@ -1470,62 +1473,150 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // PROMPT BUILDERS (multilingual)
+  // ---------------------------------------------------------------------------
+
+  function buildSuggestionsPrompt(available, must, extraReq) {
+    var lang = currentLang;
+
+    // Translate ingredient names for the prompt
+    var availTr = available.map(tIngredient);
+    var mustTr  = must.map(tIngredient);
+
+    var ingredientLine = availTr.length
+      ? { en: 'Available ingredients: ', de: 'Verf\u00fcgbare Zutaten: ', pt: 'Ingredientes dispon\u00edveis: ' }[lang] + availTr.join(', ') + '.'
+      : { en: 'No specific ingredients selected.', de: 'Keine Zutaten ausgew\u00e4hlt.', pt: 'Nenhum ingrediente selecionado.' }[lang];
+    var mustLine = mustTr.length
+      ? { en: 'Ingredients that MUST be included: ', de: 'Zutaten, die UNBEDINGT enthalten sein m\u00fcssen: ', pt: 'Ingredientes que DEVEM ser inclu\u00eddos: ' }[lang] + mustTr.join(', ') + '.'
+      : '';
+    var extraLine = extraReq
+      ? { en: 'The user has one additional requirement that must be respected: ', de: 'Die nutzende Person hat eine zus\u00e4tzliche Anforderung, die beachtet werden muss: ', pt: 'O usu\u00e1rio tem um requisito adicional que deve ser respeitado: ' }[lang] + extraReq
+      : '';
+
+    var responseNote = {
+      en: 'Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.',
+      de: 'Gib NUR ein g\u00fcltiges JSON-Array zur\u00fcck, ohne Einleitung, ohne Erkl\u00e4rung, ohne Markdown-Bl\u00f6cke.',
+      pt: 'Retorne APENAS um array JSON v\u00e1lido, sem preâmbulo, sem explica\u00e7\u00e3o, sem blocos markdown.'
+    }[lang];
+
+    var fieldNote = {
+      en: 'Each item must have exactly these fields:\n  "name": string (dish name),\n  "emoji": string (one relevant emoji),\n  "description": string (one short, factual sentence \u2014 what the dish is, nothing more; no selling, no adjectives like delicious/hearty/vibrant)',
+      de: 'Jedes Element muss genau diese Felder haben:\n  "name": String (Name des Gerichts),\n  "emoji": String (ein passendes Emoji),\n  "description": String (ein kurzer, sachlicher Satz \u2014 was das Gericht ist, nicht mehr; kein Werben, keine Adjektive wie k\u00f6stlich/herzhaft/farbenfroh)',
+      pt: 'Cada item deve ter exatamente estes campos:\n  "name": string (nome do prato),\n  "emoji": string (um emoji relevante),\n  "description": string (uma frase curta e factual \u2014 o que \u00e9 o prato, nada mais; sem vender, sem adjetivos como delicioso/encorpado/vibrante)'
+    }[lang];
+
+    if (currentMode === 'dessert') {
+      var dFlavors = Array.from(selectedDessertFlavors);
+      var dStyles  = Array.from(selectedDessertStyles);
+      var dFlavTr  = dFlavors.map(tChip);
+      var dStyleTr = dStyles.map(tChip);
+      var flavorLine  = dFlavTr.length  ? { en: 'Flavor mood: ', de: 'Geschmacksrichtung: ', pt: 'Sabor: ' }[lang] + dFlavTr.join(', ') + '.' : '';
+      var styleLine   = dStyleTr.length ? { en: 'Style: ', de: 'Stil: ', pt: 'Estilo: ' }[lang] + dStyleTr.join(', ') + '.'               : '';
+
+      var roleLines = {
+        en: 'You are a vegan dessert recipe assistant. Suggest exactly 6 plant-based dessert ideas.',
+        de: 'Du bist ein Assistent f\u00fcr vegane Dessertrezepte. Schlage genau 6 pflanzliche Dessertideen vor.',
+        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas de sobremesa. Sugira exatamente 6 ideias de sobremesas plant-based.'
+      }[lang];
+
+      var rules = {
+        en: '- All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list.\n- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n- Suggest only desserts and sweet dishes. Do not suggest savoury food.\n- Use metric measurements where applicable.\n- Do NOT invent or hallucinate URLs, websites, or sources.',
+        de: '- Alle Rezepte m\u00fcssen 100% pflanzlich sein (keine Milchprodukte, Eier oder Honig) \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste erscheint.\n- STRIKT: Verwende nur Zutaten aus der obigen Liste. Wasser ist erlaubt. F\u00fcge keine weiteren Zutaten hinzu.\n- Schlage nur Desserts und s\u00fc\u00dfe Gerichte vor. Kein herzhaftes Essen.\n- Verwende metrische Ma\u00dfe wo m\u00f6glich.\n- Erfinde KEINE URLs, Webseiten oder Quellen.',
+        pt: '- Todas as receitas devem ser 100% plant-based (sem latic\u00ednios, ovos ou mel) \u2014 exceto se um ingrediente n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n- ESTRITO: use apenas ingredientes da lista acima. \u00c1gua tamb\u00e9m \u00e9 permitida. N\u00e3o introduza outros ingredientes.\n- Sugira apenas sobremesas e pratos doces. N\u00e3o sugira comida salgada.\n- Use medidas m\u00e9tricas onde aplic\u00e1vel.\n- N\u00c3O invente URLs, sites ou fontes.'
+      }[lang];
+
+      var example = {
+        en: 'Example format:\n[{"name":"Banana Oat Cookies","emoji":"\uD83C\uDF6A","description":"Baked cookies made from mashed banana and rolled oats."}]',
+        de: 'Beispielformat:\n[{"name":"Bananen-Haferflocken-Kekse","emoji":"\uD83C\uDF6A","description":"Gebackene Kekse aus Bananenpüree und Haferflocken."}]',
+        pt: 'Exemplo de formato:\n[{"name":"Biscoitos de Banana e Aveia","emoji":"\uD83C\uDF6A","description":"Biscoitos assados feitos com banana amassada e aveia."}]'
+      }[lang];
+
+      return roleLines + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n\nRules:\n' + rules + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example;
+
+    } else {
+      var flavors  = Array.from(selectedFlavors);
+      var cuisines = Array.from(selectedCuisines);
+      var contexts = Array.from(selectedMealContexts);
+      var flavTr   = flavors.map(tChip);
+      var cuiTr    = cuisines.map(tChip);
+      var ctxTr    = contexts.map(tChip);
+
+      var flavorLine2 = flavTr.length  ? { en: 'Flavor mood: ', de: 'Geschmacksrichtung: ', pt: 'Sabor: ' }[lang] + flavTr.join(', ') + '.'  : '';
+      var cuisineLine  = cuiTr.length  ? { en: 'Cuisine style: ', de: 'K\u00fcchenstil: ', pt: 'Estilo culin\u00e1rio: ' }[lang] + cuiTr.join(', ') + '.' : '';
+      var contextLine  = {
+        en: 'Meal context: the user is looking for ' + ctxTr.join(' or ') + '. Each suggestion must fit at least one of these contexts.',
+        de: 'Mahlzeiten-Kontext: Die Person sucht nach ' + ctxTr.join(' oder ') + '. Jeder Vorschlag muss mindestens einem dieser Kontexte entsprechen.',
+        pt: 'Contexto da refeição: o usu\u00e1rio est\u00e1 procurando por ' + ctxTr.join(' ou ') + '. Cada sugest\u00e3o deve se encaixar em pelo menos um desses contextos.'
+      }[lang];
+
+      var roleLines2 = {
+        en: 'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.',
+        de: 'Du bist ein veganer Rezeptassistent. Schlage genau 6 pflanzliche Rezeptideen vor.',
+        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas. Sugira exatamente 6 ideias de receitas plant-based.'
+      }[lang];
+
+      var rules2 = {
+        en: '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n- Do NOT invent or hallucinate URLs, websites, or sources.',
+        de: '- Alle Rezepte m\u00fcssen 100% pflanzlich sein (kein Fleisch, Fisch, Milchprodukte, Eier oder Honig) \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste erscheint.\n- STRIKT: Verwende nur Zutaten aus der obigen Liste. Wasser ist erlaubt. F\u00fcge keine weiteren Zutaten hinzu.\n- Verwende metrische Ma\u00dfe: ml, Liter, Gramm, kg, cm (Essl\u00f6ffel und Teel\u00f6ffel sind akzeptabel).\n- Priorisiere n\u00e4hrwertm\u00e4\u00dfige Ausgewogenheit \u00fcber die 6 Vorschl\u00e4ge hinweg.\n- Erfinde KEINE URLs, Webseiten oder Quellen.',
+        pt: '- Todas as receitas devem ser 100% plant-based (sem carne, peixe, latic\u00ednios, ovos ou mel) \u2014 exceto se um ingrediente n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n- ESTRITO: use apenas ingredientes da lista acima. \u00c1gua tamb\u00e9m \u00e9 permitida. N\u00e3o introduza outros ingredientes.\n- Use medidas m\u00e9tricas: ml, litros, gramas, kg, cm (colheres de sopa e ch\u00e1 s\u00e3o aceit\u00e1veis).\n- Priorize equil\u00edbrio nutricional entre as 6 sugest\u00f5es.\n- N\u00c3O invente URLs, sites ou fontes.'
+      }[lang];
+
+      var example2 = {
+        en: 'Example format:\n[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Pasta tossed with garlic, olive oil, and chili flakes."}]',
+        de: 'Beispielformat:\n[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Nudeln geschwenkt mit Knoblauch, Oliven\u00f6l und Chiliflocken."}]',
+        pt: 'Exemplo de formato:\n[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Macarr\u00e3o refogado com alho, azeite e pimenta em flocos."}]'
+      }[lang];
+
+      return roleLines2 + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n\nRules:\n' + rules2 + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example2;
+    }
+  }
+
+  function buildFullRecipePrompt(dishName, available, must, extraReq) {
+    var lang = currentLang;
+    var isDessert = currentMode === 'dessert';
+    var availTr = available.map(tIngredient);
+    var mustTr  = must.map(tIngredient);
+    var extraLine = extraReq
+      ? { en: 'The user has one additional requirement that must be respected: ', de: 'Die nutzende Person hat eine zus\u00e4tzliche Anforderung: ', pt: 'O usu\u00e1rio tem um requisito adicional: ' }[lang] + extraReq
+      : '';
+
+    var roleLines = {
+      en: 'You are a vegan ' + (isDessert ? 'dessert ' : '') + 'recipe assistant. Write a complete recipe for "' + dishName + '".',
+      de: 'Du bist ein veganer ' + (isDessert ? 'Dessert-' : '') + 'Rezeptassistent. Schreibe ein vollst\u00e4ndiges Rezept f\u00fcr \u201e' + dishName + '\u201c.',
+      pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas' + (isDessert ? ' de sobremesa' : '') + '. Escreva uma receita completa para "' + dishName + '".'
+    }[lang];
+
+    var availLine = { en: 'Available ingredients the user has: ', de: 'Verf\u00fcgbare Zutaten: ', pt: 'Ingredientes dispon\u00edveis: ' }[lang] + availTr.join(', ') + '.';
+    var mustLine  = mustTr.length ? { en: 'Must include: ', de: 'Muss enthalten: ', pt: 'Deve incluir: ' }[lang] + mustTr.join(', ') + '.\n' : '';
+
+    var rules = {
+      en: '- The recipe must be 100% plant-based (no ' + (isDessert ? 'dairy, eggs, or honey' : 'meat, fish, dairy, eggs, or honey') + ') \u2014 except if a non-plant-based ingredient appears in the must-include list.\n- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable).\n' + (isDessert ? '' : '- Aim for nutritional completeness: where the ingredients allow, include a protein source, a complex carbohydrate, and a vegetable.\n') + '- Do NOT invent or hallucinate URLs or sources.',
+      de: '- Das Rezept muss 100% pflanzlich sein (kein' + (isDessert ? 'e Milchprodukte, Eier oder Honig' : ' Fleisch, Fisch, Milchprodukte, Eier oder Honig') + ') \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste erscheint.\n- STRIKT: Verwende nur Zutaten aus der obigen Liste. Wasser ist erlaubt.\n- Verwende metrische Ma\u00dfe.\n' + (isDessert ? '' : '- Anstreben nach n\u00e4hrwertm\u00e4\u00dfiger Vollst\u00e4ndigkeit.\n') + '- Erfinde KEINE URLs oder Quellen.',
+      pt: '- A receita deve ser 100% plant-based (sem ' + (isDessert ? 'latic\u00ednios, ovos ou mel' : 'carne, peixe, latic\u00ednios, ovos ou mel') + ') \u2014 exceto se um ingrediente n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n- ESTRITO: use apenas ingredientes da lista acima. \u00c1gua tamb\u00e9m \u00e9 permitida.\n- Use medidas m\u00e9tricas.\n' + (isDessert ? '' : '- Busque completude nutricional.\n') + '- N\u00c3O invente URLs ou fontes.'
+    }[lang];
+
+    var responseNote = {
+      en: 'Return ONLY valid JSON with no preamble, no markdown fences.',
+      de: 'Gib NUR g\u00fcltiges JSON zur\u00fcck, ohne Einleitung, ohne Markdown-Bl\u00f6cke.',
+      pt: 'Retorne APENAS JSON v\u00e1lido, sem pre\u00e2mbulo, sem blocos markdown.'
+    }[lang];
+
+    var fieldNote = {
+      en: 'The JSON must have exactly these fields:\n  "name": string,\n  "emoji": string (one emoji),\n  "description": string (one short, factual sentence describing what the dish is),\n  "servings": string (e.g. "serves 2"),\n  "time": string (e.g. "30 minutes"),\n  "ingredients": array of strings,\n  "steps": array of strings',
+      de: 'Das JSON muss genau diese Felder haben:\n  "name": String,\n  "emoji": String (ein Emoji),\n  "description": String (ein kurzer, sachlicher Satz),\n  "servings": String (z.B. "f\u00fcr 2 Personen"),\n  "time": String (z.B. "30 Minuten"),\n  "ingredients": Array von Strings,\n  "steps": Array von Strings',
+      pt: 'O JSON deve ter exatamente estes campos:\n  "name": string,\n  "emoji": string (um emoji),\n  "description": string (uma frase curta e factual),\n  "servings": string (ex: "serve 2"),\n  "time": string (ex: "30 minutos"),\n  "ingredients": array de strings,\n  "steps": array de strings'
+    }[lang];
+
+    return roleLines + '\n\n' + availLine + '\n' + mustLine + (extraLine ? extraLine + '\n' : '') + '\nRules:\n' + rules + '\n' + responseNote + '\n' + fieldNote;
+  }
+
   // API CALLS
   function fetchRecipeIdeas() {
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
     var extraReq  = getExtraRequest();
-
-    var ingredientLine = available.length ? 'Available ingredients: ' + available.join(', ') + '.' : 'No specific ingredients selected.';
-    var mustLine       = must.length ? 'Ingredients that MUST be included: ' + must.join(', ') + '.' : '';
-    var extraLine      = extraReq ? 'The user has one additional requirement that must be respected: ' + extraReq : '';
-
-    var prompt;
-    if (currentMode === 'dessert') {
-      var dFlavors = Array.from(selectedDessertFlavors);
-      var dStyles  = Array.from(selectedDessertStyles);
-      var flavorLine  = dFlavors.length ? 'Flavor mood: ' + dFlavors.join(', ') + '.' : '';
-      var styleLine   = dStyles.length  ? 'Style: ' + dStyles.join(', ') + '.'        : '';
-      prompt =
-        'You are a vegan dessert recipe assistant. Suggest exactly 6 plant-based dessert ideas.\n\n' +
-        ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n\n' +
-        'Rules:\n' +
-        '- All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
-        '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
-        '- Suggest only desserts and sweet dishes. Do not suggest savoury food.\n' +
-        '- Use metric measurements where applicable.\n' +
-        '- Do NOT invent or hallucinate URLs, websites, or sources.\n' +
-        '- Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.\n' +
-        '- Each item must have exactly these fields:\n' +
-        '  "name": string (dish name),\n' +
-        '  "emoji": string (one relevant emoji),\n' +
-        '  "description": string (one short, factual sentence \u2014 what the dish is, nothing more; no selling, no adjectives like delicious/decadent/indulgent)\n\n' +
-        'Example format:\n' +
-        '[{"name":"Banana Oat Cookies","emoji":"\uD83C\uDF6A","description":"Baked cookies made from mashed banana and rolled oats."}]';
-    } else {
-      var flavors  = Array.from(selectedFlavors);
-      var cuisines = Array.from(selectedCuisines);
-      var contexts = Array.from(selectedMealContexts);
-      var flavorLine2  = flavors.length  ? 'Flavor mood: ' + flavors.join(', ') + '.'  : '';
-      var cuisineLine  = cuisines.length ? 'Cuisine style: ' + cuisines.join(', ') + '.': '';
-      var contextLine  = 'Meal context: the user is looking for ' + contexts.join(' or ') + '. Each suggestion must fit at least one of these contexts.';
-      prompt =
-        'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.\n\n' +
-        ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n\n' +
-        'Rules:\n' +
-        '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n' +
-        '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
-        '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n' +
-        '- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n' +
-        '- Do NOT invent or hallucinate URLs, websites, or sources.\n' +
-        '- Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.\n' +
-        '- Each item must have exactly these fields:\n' +
-        '  "name": string (dish name),\n' +
-        '  "emoji": string (one relevant emoji),\n' +
-        '  "description": string (one short, factual sentence -- what the dish is, nothing more; no selling, no adjectives like delicious/hearty/vibrant)\n\n' +
-        'Example format:\n' +
-        '[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Pasta tossed with garlic, olive oil, and chili flakes."}]';
-    }
+    var prompt    = buildSuggestionsPrompt(available, must, extraReq);
 
     return workerFetch({ messages: [{ role: 'user', content: prompt }], max_tokens: 1200 })
       .then(function(data) {
@@ -1537,34 +1628,12 @@
   }
 
   function getFullRecipe(dishName) {
-    document.querySelector('.loading-text').textContent = 'Brewing...';
+    document.getElementById('loadingText').textContent = t('loadingBrewing');
     showPage('page-loading');
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
     var extraReq  = getExtraRequest();
-    var isDessert = currentMode === 'dessert';
-    var extraLine = extraReq ? 'The user has one additional requirement that must be respected: ' + extraReq : '';
-
-    var prompt =
-      'You are a vegan ' + (isDessert ? 'dessert ' : '') + 'recipe assistant. Write a complete recipe for "' + dishName + '".\n\n' +
-      'Available ingredients the user has: ' + available.join(', ') + '.\n' +
-      (must.length ? 'Must include: ' + must.join(', ') + '.\n' : '') +
-      (extraLine   ? extraLine + '\n'                            : '') + '\n' +
-      'Rules:\n' +
-      '- The recipe must be 100% plant-based (no ' + (isDessert ? 'dairy, eggs, or honey' : 'meat, fish, dairy, eggs, or honey') + ') \u2014 except if a non-plant-based ingredient appears in the must-include list.\n' +
-      '- STRICT: only use ingredients from the list above. You may also use water. Do not introduce any other ingredients.\n' +
-      '- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable).\n' +
-      (isDessert ? '' : '- Aim for nutritional completeness: where the ingredients allow, include a protein source, a complex carbohydrate, and a vegetable.\n') +
-      '- Do NOT invent or hallucinate URLs or sources.\n' +
-      '- Return ONLY valid JSON with no preamble, no markdown fences.\n' +
-      '- The JSON must have exactly these fields:\n' +
-      '  "name": string,\n' +
-      '  "emoji": string (one emoji),\n' +
-      '  "description": string (one short, factual sentence describing what the dish is),\n' +
-      '  "servings": string (e.g. "serves 2"),\n' +
-      '  "time": string (e.g. "30 minutes"),\n' +
-      '  "ingredients": array of strings,\n' +
-      '  "steps": array of strings';
+    var prompt    = buildFullRecipePrompt(dishName, available, must, extraReq);
 
     workerFetch({ messages: [{ role: 'user', content: prompt }], max_tokens: 1500 })
       .then(function(data) {
@@ -1575,7 +1644,7 @@
       })
       .catch(function(e) {
         console.error('[FtC] getFullRecipe failed:', e);
-        showError('The AI didn\u2019t respond.<span class="error-sub">Please try again.</span>', true);
+        showError(t('errorNoResponse'), true);
       });
   }
 
@@ -1621,8 +1690,8 @@
         '<div class="recipe-card-name">'  + r.name + '</div>' +
         '<div class="recipe-card-desc">'  + r.description + '</div>' +
         '<div class="card-actions">' +
-          '<button class="btn-recipe">Get full recipe</button>' +
-          '<button class="btn-search">Search online &#8599;</button>' +
+          '<button class="btn-recipe">' + t('getFullRecipe') + '</button>' +
+          '<button class="btn-search">' + t('searchOnline') + '</button>' +
         '</div>';
       (function(name) {
         card.querySelector('.btn-recipe').addEventListener('click', function(){ getFullRecipe(name); });
@@ -1651,7 +1720,7 @@
 
     var hint = document.createElement('div');
     hint.className = 'recipe-checklist-hint';
-    hint.innerHTML = '\u2610 Tap any item to check it off as you cook';
+    hint.innerHTML = t('checklistHint');
     function dismissHint() {
       if (!checklistHintDismissed) {
         checklistHintDismissed = true;
@@ -1664,7 +1733,7 @@
     ingSection.style.cssText = 'margin-top:4px';
     var ingLabel = document.createElement('div');
     ingLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
-    ingLabel.textContent = 'Ingredients';
+    ingLabel.textContent = t('ingredientsLabel');
     ingSection.appendChild(ingLabel);
     var ingList = document.createElement('ul');
     ingList.className = 'recipe-check-list';
@@ -1678,7 +1747,7 @@
     stepsSection.style.cssText = 'margin-top:8px';
     var stepsLabel = document.createElement('div');
     stepsLabel.style.cssText = 'font-size:0.78rem;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px';
-    stepsLabel.textContent = 'Method';
+    stepsLabel.textContent = t('methodLabel');
     stepsSection.appendChild(stepsLabel);
     var stepsList = document.createElement('ol');
     stepsList.className = 'recipe-check-list';
@@ -1692,9 +1761,41 @@
     var actions = document.createElement('div');
     actions.className = 'card-actions';
     actions.style.cssText = 'margin-top:8px';
+    var copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-copy-recipe';
+    copyBtn.textContent = t('copyRecipe');
+    copyBtn.addEventListener('click', function() {
+      var lines = [];
+      lines.push(recipe.name);
+      if (recipe.servings || recipe.time) lines.push((recipe.servings || '') + (recipe.servings && recipe.time ? '  \u00B7  ' : '') + (recipe.time || ''));
+      lines.push('');
+      lines.push(recipe.description || '');
+      lines.push('');
+      lines.push(t('ingredientsLabel'));
+      (recipe.ingredients || []).forEach(function(ing) { lines.push('  \u2022 ' + ing); });
+      lines.push('');
+      lines.push(t('methodLabel'));
+      (recipe.steps || []).forEach(function(step, i) { lines.push((i + 1) + '. ' + step); });
+      lines.push('');
+      lines.push(t('copyFooter'));
+      var text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(function() {
+        copyBtn.textContent = t('copied');
+        copyBtn.classList.add('copied');
+        setTimeout(function() {
+          copyBtn.textContent = t('copyRecipe');
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      }).catch(function() {
+        copyBtn.textContent = t('copyFailed');
+        setTimeout(function() { copyBtn.textContent = t('copyRecipe'); }, 2000);
+      });
+    });
+    actions.appendChild(copyBtn);
+
     var searchBtn = document.createElement('button');
     searchBtn.className = 'btn-search';
-    searchBtn.innerHTML = 'Search online &#8599;';
+    searchBtn.innerHTML = t('searchOnline');
     searchBtn.addEventListener('click', function(){
       window.open('https://www.ecosia.org/search?q=' + encodeURIComponent(recipe.name + ' vegan recipe'), '_blank');
     });
@@ -1706,8 +1807,7 @@
   // VIEW MODE & BACK BUTTON
   function setViewMode(mode) {
     viewMode = mode;
-    var label = document.getElementById('backBtnLabel');
-    label.textContent = mode === 'recipe' ? 'Back to ideas' : 'Change ingredients';
+    document.getElementById('backBtnLabel').textContent = mode === 'recipe' ? t('backToIdeas') : t('changeIngredients');
   }
 
   function handleBackBtn() {
@@ -1729,7 +1829,7 @@
   function showError(msg, withBack) {
     var wrap = document.getElementById('resultsContent');
     wrap.innerHTML = '<div class="error-msg">' + msg +
-      (withBack ? '<br><button onclick="handleBackBtn()">&#8592; Back</button>' : '') +
+      (withBack ? '<br><button onclick="handleBackBtn()">\u2190 Back</button>' : '') +
       '</div>';
     showPage('page-results');
   }
@@ -1738,13 +1838,18 @@
   function init() {
     loadState();
 
+    // Set language selector to match loaded lang
+    document.getElementById('langSelect').value = currentLang;
+
     if (currentMode === 'dessert') {
       document.body.classList.add('dessert-mode');
       document.getElementById('modeBtnSavory').className  = 'mode-btn';
       document.getElementById('modeBtnDessert').className = 'mode-btn dessert-active';
       document.getElementById('mealContextWrap').style.display = 'none';
-      document.getElementById('cuisineTitle').textContent = 'Style';
     }
+
+    // Apply translations before first render
+    applyTranslations();
 
     renderDesktop();
     renderMobile();
@@ -1759,14 +1864,18 @@
     document.getElementById('expandBar').addEventListener('click', toggleExpand);
     document.getElementById('resetBtn').addEventListener('click', resetToDefaults);
 
+    document.getElementById('langSelect').addEventListener('change', function(){
+      switchLang(this.value);
+    });
+
     document.getElementById('findBtn').addEventListener('click', function() {
-      document.querySelector('.loading-text').textContent = 'Rummaging the cupboard...';
+      document.getElementById('loadingText').textContent = t('loadingRummaging');
       showPage('page-loading');
       fetchRecipeIdeas()
         .then(function(recipes) { renderResults(recipes); showPage('page-results'); })
         .catch(function(e) {
           console.error('[FtC] fetchRecipeIdeas failed:', e);
-          showError('The AI didn\u2019t respond.<span class="error-sub">Please try again.</span>');
+          showError(t('errorNoResponse'));
         });
     });
 
@@ -1781,7 +1890,7 @@
     });
   }
 
-	// INFO OVERLAYS
+  // INFO OVERLAYS
   function openInfoOverlay(id) {
     document.getElementById('overlay-' + id).classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1802,8 +1911,9 @@
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) closeInfoOverlay(overlay.id.replace('overlay-', ''));
     });
-  });  
-	init();
+  });
+
+  init();
   </script>
 </body>
 </html>
