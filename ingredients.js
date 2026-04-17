@@ -54,6 +54,7 @@ const INGREDIENTS_RAW = {
           { n: 'red onion',     defaultOn: false },
           { n: 'ginger',        defaultOn: false },
           { n: 'leek',          defaultOn: false },
+					{ n: 'spring onion',	defaultOn: false },
           { n: 'chili pepper',  defaultOn: false },
         ]
       },
@@ -431,6 +432,7 @@ const INGREDIENT_TRANSLATIONS = {
     'red onion': 'rote Zwiebel',
     'ginger': 'Ingwer',
     'leek': 'Lauch',
+		'spring onion': 'Frühlingszwiebel',
     'chili pepper': 'Chilischote',
     // Produce – Veg
     'tomatoes': 'Tomaten',
@@ -585,6 +587,7 @@ const INGREDIENT_TRANSLATIONS = {
     'red onion': 'cebola roxa',
     'ginger': 'gengibre',
     'leek': 'alho-por\u00f3',
+		'spring onion': 'cebolinha',
     'chili pepper': 'pimenta chili',
     // Produce – Veg
     'tomatoes': 'tomates',
