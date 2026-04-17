@@ -967,7 +967,7 @@ const UI_TRANSLATIONS = {
     flavorMoodTitle: 'Sabor',
     cuisineTitle: 'Culin\u00e1ria',
     dessertCuisineTitle: 'Estilo',
-    findBtn: 'Encontrar receitas \u00a0\u2192',
+    findBtn: 'Encontrar ideias de receitas \u00a0\u2192',
     loadingRummaging: 'Vasculhando a despensa\u2026',
     loadingBrewing: 'Preparando\u2026',
     backToIdeas: 'Voltar \u00e0s ideias',
