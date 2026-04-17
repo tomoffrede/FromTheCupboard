@@ -520,6 +520,59 @@
     }
     @media (min-width: 641px) { .mobile-only { display: none; } }
 
+		/* Footer */
+    .site-footer {
+      text-align: center; padding: 2rem 1rem 1.5rem; margin-top: 1rem;
+      border-top: 1px solid #e8e8e4;
+    }
+    .site-footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+    .footer-link {
+      font-size: 0.78rem; color: #bbb; cursor: pointer; background: none; border: none;
+      padding: 0; text-decoration: underline; text-underline-offset: 3px;
+      transition: color 0.12s;
+    }
+    .footer-link:hover { color: #888; }
+
+    /* Info overlays */
+    .info-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-start;
+      padding: 1.5rem 1rem;
+    }
+    .info-overlay.open { display: flex; }
+    .info-panel {
+      background: #fff; border-radius: 22px; padding: 2rem 2rem 2.5rem;
+      width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto;
+      position: relative;
+    }
+    .info-panel-close {
+      position: sticky; top: 0; float: right; font-size: 1.1rem; color: #bbb;
+      cursor: pointer; padding: 0 0 8px 12px; line-height: 1;
+    }
+    .info-panel-close:hover { color: #555; }
+    .info-panel h2 {
+      font-size: 1.25rem; font-weight: 700; color: #1a1a1a;
+      margin-bottom: 1.25rem; line-height: 1.3;
+    }
+    .info-panel h3 {
+      font-size: 0.85rem; font-weight: 700; color: #444;
+      margin: 1.25rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .info-panel p, .info-panel li { font-size: 0.88rem; color: #555; line-height: 1.75; }
+    .info-panel ul { padding-left: 1.25rem; margin: 0.25rem 0; }
+    .info-panel a { color: #639922; text-decoration: underline; text-underline-offset: 2px; }
+    body.dessert-mode .info-panel a { color: #534AB7; }
+    .info-lang-toggle { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+    .info-lang-btn {
+      padding: 5px 16px; border-radius: 20px; border: 1.5px solid #e0e0e0;
+      background: #f5f5f2; font-size: 0.78rem; font-weight: 600; color: #888;
+      cursor: pointer; transition: all 0.12s;
+    }
+    .info-lang-btn.active { border-color: #aaa; background: #1a1a1a; color: #fff; }
+    .info-lang-content { display: none; }
+    .info-lang-content.active { display: block; }
+    .info-divider { height: 1px; background: #e8e8e4; margin: 1.5rem 0; }
+
     /* Modal */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
@@ -616,8 +669,99 @@
       <div class="cta-wrap">
         <button class="cta" id="findBtn">Find recipe ideas &nbsp;&#8594;</button>
       </div>
+    <footer class="site-footer">
+        <div class="site-footer-links">
+          <button class="footer-link" onclick="openInfoOverlay('about')">About</button>
+          <button class="footer-link" onclick="openInfoOverlay('impressum')">Impressum</button>
+          <button class="footer-link" onclick="openInfoOverlay('datenschutz')">Datenschutz / Privacy</button>
+        </div>
+      </footer>
     </div>
   </div>
+
+  <!-- About overlay -->
+  <div class="info-overlay" id="overlay-about">
+    <div class="info-panel">
+      <span class="info-panel-close" onclick="closeInfoOverlay('about')">&#10005;</span>
+      <h2>About From the Cupboard</h2>
+      <h3>What is this?</h3>
+      <p>From the Cupboard is a plant-based recipe idea generator. You select the ingredients you actually have at home, optionally set a flavor mood or cuisine preference, and the app suggests six recipe ideas. You can then get a full recipe generated on the spot, or search for human-made versions online.</p>
+      <h3>How it works</h3>
+      <p>The ingredient selection and all interface logic runs directly in your browser &#8212; no account, no tracking. When you ask for recipe suggestions, your ingredient list is sent to a language model (currently a large open-source LLM via the Groq API), which generates ideas and recipes based strictly on what you have.</p>
+      <p>The backend is a small Cloudflare Worker that acts as a proxy, so no API key ever appears in the page source. Everything else &#8212; the UI, ingredient data, and state management &#8212; is plain HTML, CSS, and JavaScript, hosted on GitHub Pages.</p>
+      <h3>Who made it?</h3>
+      <p>This is a personal project by <strong>Tom Offrede</strong>, a linguist and researcher. It was built as an experiment in vibe-coding &#8212; iterating quickly on ideas with AI assistance &#8212; and as a genuinely useful tool for everyday plant-based cooking.</p>
+      <p>Source code: <a href="https://github.com/tomoffride/FromTheCupboard" target="_blank" rel="noopener">github.com/tomoffride/FromTheCupboard</a></p>
+    </div>
+  </div>
+
+  <!-- Impressum overlay -->
+  <div class="info-overlay" id="overlay-impressum">
+    <div class="info-panel">
+      <span class="info-panel-close" onclick="closeInfoOverlay('impressum')">&#10005;</span>
+      <h2>Impressum</h2>
+      <div class="info-lang-toggle">
+        <button class="info-lang-btn active" onclick="switchInfoLang('impressum','de',this)">Deutsch</button>
+        <button class="info-lang-btn" onclick="switchInfoLang('impressum','en',this)">English</button>
+      </div>
+      <div class="info-lang-content active" id="impressum-de">
+        <h3>Angaben gem&auml;&szlig; &sect; 5 TMG</h3>
+        <p>Tom Offrede<br>Frankfurt am Main, Deutschland<br>E-Mail: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+        <div class="info-divider"></div>
+        <h3>Haftungsausschluss</h3>
+        <p>Diese Website ist ein privates, nicht-kommerzielles Projekt. Die generierten Rezeptvorschl&auml;ge werden von einem KI-Sprachmodell erstellt und sind ohne Gew&auml;hr. F&uuml;r die Vollst&auml;ndigkeit, Richtigkeit oder Eignung der Inhalte wird keine Haftung &uuml;bernommen.</p>
+        <h3>Externe Links</h3>
+        <p>Diese Website enth&auml;lt Links zu externen Diensten (Ecosia, GitHub). F&uuml;r deren Inhalte sind die jeweiligen Betreiber verantwortlich.</p>
+      </div>
+      <div class="info-lang-content" id="impressum-en">
+        <h3>Information pursuant to &sect; 5 TMG</h3>
+        <p>Tom Offrede<br>Frankfurt am Main, Germany<br>Email: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+        <div class="info-divider"></div>
+        <h3>Disclaimer</h3>
+        <p>This is a private, non-commercial project. Recipe suggestions are generated by an AI language model and provided without warranty. No liability is accepted for the completeness, accuracy, or suitability of the content.</p>
+        <h3>External links</h3>
+        <p>This website contains links to external services (Ecosia, GitHub). Their respective operators are responsible for the content of those pages.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Datenschutz / Privacy overlay -->
+  <div class="info-overlay" id="overlay-datenschutz">
+    <div class="info-panel">
+      <span class="info-panel-close" onclick="closeInfoOverlay('datenschutz')">&#10005;</span>
+      <h2>Datenschutz &amp; Privacy</h2>
+      <div class="info-lang-toggle">
+        <button class="info-lang-btn active" onclick="switchInfoLang('datenschutz','de',this)">Deutsch</button>
+        <button class="info-lang-btn" onclick="switchInfoLang('datenschutz','en',this)">English</button>
+      </div>
+      <div class="info-lang-content active" id="datenschutz-de">
+        <h3>Keine Tracking-Tools</h3>
+        <p>Diese Website verwendet keine Cookies, keine Analyse-Tools und kein Tracking. Es wird kein Nutzerverhalten aufgezeichnet oder an Dritte weitergegeben.</p>
+        <h3>Lokaler Speicher (LocalStorage)</h3>
+        <p>Die App speichert deine Zutatenauswahl und Einstellungen ausschlie&szlig;lich lokal in deinem Browser (localStorage). Diese Daten verlassen dein Ger&auml;t nicht und sind nur f&uuml;r dich zug&auml;nglich. Du kannst sie jederzeit &uuml;ber die Reset-Funktion oder die Browser-Einstellungen l&ouml;schen.</p>
+        <h3>KI-Abfragen</h3>
+        <p>Wenn du Rezeptvorschl&auml;ge anforderst, wird deine Zutatenauswahl als Text an einen Cloudflare Worker gesendet, der die Anfrage an die Groq API weiterleitet. Es werden keine pers&ouml;nlichen Daten &uuml;bertragen. Die Datenschutzrichtlinie von Groq gilt f&uuml;r die Verarbeitung dieser Anfragen.</p>
+        <h3>Hosting</h3>
+        <p>Die Website wird &uuml;ber GitHub Pages bereitgestellt. GitHub kann technische Zugriffsdaten (z.&nbsp;B. IP-Adresse) protokollieren. Die Datenschutzerkl&auml;rung von GitHub gilt entsprechend.</p>
+        <h3>Kontakt</h3>
+        <p>Bei Fragen zum Datenschutz: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+      </div>
+      <div class="info-lang-content" id="datenschutz-en">
+        <h3>No tracking</h3>
+        <p>This website uses no cookies, no analytics tools, and no tracking. No user behaviour is recorded or shared with third parties.</p>
+        <h3>Local storage</h3>
+        <p>The app stores your ingredient selections and settings exclusively in your browser&#8217;s localStorage. This data never leaves your device and is only accessible to you. You can delete it at any time using the reset button or your browser settings.</p>
+        <h3>AI queries</h3>
+        <p>When you request recipe suggestions, your ingredient list is sent as text to a Cloudflare Worker, which forwards it to the Groq API. No personal data is transmitted. Groq&#8217;s privacy policy applies to the processing of these requests.</p>
+        <h3>Hosting</h3>
+        <p>This website is hosted via GitHub Pages. GitHub may log technical access data (e.g. IP address). GitHub&#8217;s privacy policy applies accordingly.</p>
+        <h3>Contact</h3>
+        <p>For privacy-related questions: <a href="mailto:tomoffrede@proton.me">tomoffrede@proton.me</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
 
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal" id="modal">
@@ -1637,7 +1781,29 @@
     });
   }
 
-  init();
+	// INFO OVERLAYS
+  function openInfoOverlay(id) {
+    document.getElementById('overlay-' + id).classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeInfoOverlay(id) {
+    document.getElementById('overlay-' + id).classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function switchInfoLang(overlayId, lang, btn) {
+    var panel = document.getElementById('overlay-' + overlayId);
+    panel.querySelectorAll('.info-lang-btn').forEach(function(b){ b.classList.remove('active'); });
+    panel.querySelectorAll('.info-lang-content').forEach(function(c){ c.classList.remove('active'); });
+    btn.classList.add('active');
+    panel.querySelector('#' + overlayId + '-' + lang).classList.add('active');
+  }
+  // Close overlays on backdrop click
+  document.querySelectorAll('.info-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closeInfoOverlay(overlay.id.replace('overlay-', ''));
+    });
+  });  
+	init();
   </script>
 </body>
 </html>
