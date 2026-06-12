@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="From the Cupboard - find vegan recipe ideas based on what's in your kitchen.">
   <title>From the Cupboard</title>
-  <script src="ingredients.js?v=2"></script>
+  <script src="ingredients.js?v=3"></script>
   <style>
     /* Reset & base */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1480,7 +1480,7 @@
   // PROMPT BUILDERS (multilingual)
   // ---------------------------------------------------------------------------
 
-  function buildSuggestionsPrompt(available, must, extraReq) {
+  function buildSuggestionsPrompt(available, must, extraReq, exclude) {
     var lang = currentLang;
 
     // Translate ingredient names for the prompt
@@ -1495,6 +1495,9 @@
       : '';
     var extraLine = extraReq
       ? { en: 'The user has one additional requirement that must be respected: ', de: 'Die nutzende Person hat eine zus\u00e4tzliche Anforderung, die beachtet werden muss: ', pt: 'O usu\u00e1rio tem um requisito adicional que deve ser respeitado: ' }[lang] + extraReq
+      : '';
+    var excludeLine = (exclude && exclude.length)
+      ? { en: 'Do NOT suggest any of these dishes (already shown): ', de: 'Schlage KEINE dieser Gerichte vor (bereits gezeigt): ', pt: 'N\u00c3O sugira nenhum destes pratos (j\u00e1 mostrados): ' }[lang] + exclude.join(', ') + '.'
       : '';
 
     var responseNote = {
@@ -1535,7 +1538,7 @@
         pt: 'Exemplo de formato:\n[{"name":"Biscoitos de Banana e Aveia","emoji":"\uD83C\uDF6A","description":"Biscoitos assados feitos com banana amassada e aveia."}]'
       }[lang];
 
-      return roleLines + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n\nRules:\n' + rules + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example;
+      return roleLines + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n' + excludeLine + '\n\nRules:\n' + rules + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example;
 
     } else {
       var flavors  = Array.from(selectedFlavors);
@@ -1571,7 +1574,7 @@
         pt: 'Exemplo de formato:\n[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Macarr\u00e3o refogado com alho, azeite e pimenta em flocos."}]'
       }[lang];
 
-      return roleLines2 + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n\nRules:\n' + rules2 + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example2;
+      return roleLines2 + '\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n' + excludeLine + '\n\nRules:\n' + rules2 + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example2;
     }
   }
 
@@ -1615,11 +1618,11 @@
   }
 
   // API CALLS
-  function fetchRecipeIdeas() {
+  function fetchRecipeIdeas(exclude) {
     var available = Object.keys(state).filter(function(n){ return state[n] && !mustSet.has(n); });
     var must      = Array.from(mustSet);
     var extraReq  = getExtraRequest();
-    var prompt    = buildSuggestionsPrompt(available, must, extraReq);
+    var prompt    = buildSuggestionsPrompt(available, must, extraReq, exclude);
 
     return workerFetch({ messages: [{ role: 'user', content: prompt }], max_tokens: 1200 })
       .then(function(data) {
@@ -1678,7 +1681,7 @@
   }
 
   // RENDER RESULTS
-  function renderResults(recipes) {
+  function renderResults(recipes, exclude) {
     lastRecipes = recipes;
     setViewMode('ideas');
     var wrap = document.getElementById('resultsContent');
@@ -1705,6 +1708,18 @@
       grid.appendChild(card);
     });
     wrap.appendChild(grid);
+    var moreWrap = document.createElement('div');
+    moreWrap.style.cssText = 'text-align:center;margin-top:1.5rem;';
+    var moreBtn = document.createElement('button');
+    moreBtn.className = 'reset-btn';
+    moreBtn.style.cssText = 'font-size:0.85rem;padding:8px 22px;';
+    moreBtn.textContent = t('generateMore');
+    moreBtn.addEventListener('click', function() {
+      var shownNames = recipes.map(function(r){ return r.name; });
+      runFetchIdeas(shownNames);
+    });
+    moreWrap.appendChild(moreBtn);
+    wrap.appendChild(moreWrap);
   }
 
   function renderFullRecipe(recipe) {
@@ -1829,12 +1844,20 @@
     window.scrollTo(0, 0);
   }
 
-  function showError(msg, withBack) {
+  function showError(msg, withBack, onRetry) {
     var wrap = document.getElementById('resultsContent');
-    wrap.innerHTML = '<div class="error-msg">' + msg +
-      (withBack ? '<br><button onclick="handleBackBtn()">\u2190 Back</button>' : '') +
-      '</div>';
+    var btns = '';
+    if (onRetry) {
+      btns += '<br><button id="retryBtn" style="margin-top:1.5rem;padding:0.7rem 1.8rem;border-radius:20px;border:1px solid #e0e0e0;background:#fff;cursor:pointer;font-size:0.9rem;">&#8635; Try again</button>';
+    }
+    if (withBack) {
+      btns += '<br><button onclick="handleBackBtn()" style="margin-top:0.5rem;padding:0.7rem 1.8rem;border-radius:20px;border:1px solid #e0e0e0;background:#fff;cursor:pointer;font-size:0.9rem;">&#8592; Back</button>';
+    }
+    wrap.innerHTML = '<div class="error-msg">' + msg + btns + '</div>';
     showPage('page-results');
+    if (onRetry) {
+      document.getElementById('retryBtn').addEventListener('click', onRetry);
+    }
   }
 
   // INIT
@@ -1872,14 +1895,7 @@
     });
 
     document.getElementById('findBtn').addEventListener('click', function() {
-      document.getElementById('loadingText').textContent = t('loadingRummaging');
-      showPage('page-loading');
-      fetchRecipeIdeas()
-        .then(function(recipes) { renderResults(recipes); showPage('page-results'); })
-        .catch(function(e) {
-          console.error('[FtC] fetchRecipeIdeas failed:', e);
-          showError(t('errorNoResponse'));
-        });
+      runFetchIdeas();
     });
 
     document.getElementById('backBtn').addEventListener('click', handleBackBtn);
@@ -1915,6 +1931,17 @@
       if (e.target === overlay) closeInfoOverlay(overlay.id.replace('overlay-', ''));
     });
   });
+
+  function runFetchIdeas(exclude) {
+    document.getElementById('loadingText').textContent = t('loadingRummaging');
+    showPage('page-loading');
+    fetchRecipeIdeas(exclude)
+      .then(function(recipes) { renderResults(recipes, exclude); showPage('page-results'); })
+      .catch(function(e) {
+        console.error('[FtC] fetchRecipeIdeas failed:', e);
+        showError(t('errorNoResponse'), false, function() { runFetchIdeas(exclude); });
+      });
+  }
 
   init();
   </script>
