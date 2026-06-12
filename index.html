@@ -1483,7 +1483,6 @@
   function buildSuggestionsPrompt(available, must, extraReq, exclude) {
     var lang = currentLang;
 
-    // Translate ingredient names for the prompt
     var availTr = available.map(tIngredient);
     var mustTr  = must.map(tIngredient);
 
@@ -1494,7 +1493,7 @@
       ? { en: 'Ingredients that MUST be included: ', de: 'Zutaten, die UNBEDINGT enthalten sein m\u00fcssen: ', pt: 'Ingredientes que DEVEM ser inclu\u00eddos: ' }[lang] + mustTr.join(', ') + '.'
       : '';
     var extraLine = extraReq
-      ? { en: 'The user has one additional requirement that must be respected: ', de: 'Die nutzende Person hat eine zus\u00e4tzliche Anforderung, die beachtet werden muss: ', pt: 'O usu\u00e1rio tem um requisito adicional que deve ser respeitado: ' }[lang] + extraReq
+      ? { en: 'Additional requirement: ', de: 'Zus\u00e4tzliche Anforderung: ', pt: 'Requisito adicional: ' }[lang] + extraReq
       : '';
     var excludeLine = (exclude && exclude.length)
       ? { en: 'Do NOT suggest any of these dishes (already shown): ', de: 'Schlage KEINE dieser Gerichte vor (bereits gezeigt): ', pt: 'N\u00c3O sugira nenhum destes pratos (j\u00e1 mostrados): ' }[lang] + exclude.join(', ') + '.'
@@ -1503,7 +1502,7 @@
     var responseNote = {
       en: 'Return ONLY a valid JSON array with no preamble, no explanation, no markdown fences.',
       de: 'Gib NUR ein g\u00fcltiges JSON-Array zur\u00fcck, ohne Einleitung, ohne Erkl\u00e4rung, ohne Markdown-Bl\u00f6cke.',
-      pt: 'Retorne APENAS um array JSON v\u00e1lido, sem preâmbulo, sem explica\u00e7\u00e3o, sem blocos markdown.'
+      pt: 'Retorne APENAS um array JSON v\u00e1lido, sem pre\u00e2mbulo, sem explica\u00e7\u00e3o, sem blocos markdown.'
     }[lang];
 
     var fieldNote = {
@@ -1518,18 +1517,12 @@
       var dFlavTr  = dFlavors.map(tChip);
       var dStyleTr = dStyles.map(tChip);
       var flavorLine  = dFlavTr.length  ? { en: 'Flavor mood: ', de: 'Geschmacksrichtung: ', pt: 'Sabor: ' }[lang] + dFlavTr.join(', ') + '.' : '';
-      var styleLine   = dStyleTr.length ? { en: 'Style: ', de: 'Stil: ', pt: 'Estilo: ' }[lang] + dStyleTr.join(', ') + '.'               : '';
+      var styleLine   = dStyleTr.length ? { en: 'Style: ', de: 'Stil: ', pt: 'Estilo: ' }[lang] + dStyleTr.join(', ') + '.' : '';
 
-      var roleLines = {
-        en: 'You are a vegan dessert recipe assistant. Suggest exactly 6 plant-based dessert ideas.',
-        de: 'Du bist ein Assistent f\u00fcr vegane Dessertrezepte. Schlage genau 6 pflanzliche Dessertideen vor.',
-        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas de sobremesa. Sugira exatamente 6 ideias de sobremesas plant-based.'
-      }[lang];
-
-      var rules = {
-        en: '- All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list.\n- CRITICAL: only use ingredients from the provided list above. Do NOT introduce any ingredient not on that list \u2014 no exceptions, not even common items like banana, lemon, or spices not listed.\n- Only suggest recipes where the combination of ingredients genuinely makes sense as a dish. Do not combine ingredients in ways that would taste bad or be incoherent.\n- Suggest only desserts and sweet dishes. Do not suggest savoury food.\n- Use metric measurements where applicable.\n- Do NOT invent or hallucinate URLs, websites, or sources.',
-        de: '- Alle Rezepte m\u00fcssen 100% pflanzlich sein (keine Milchprodukte, Eier oder Honig) \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste erscheint.\n- KRITISCH: Verwende ausschlie\u00dflich Zutaten aus der oben angegebenen Liste. F\u00fcge KEINE Zutat hinzu, die nicht auf der Liste steht \u2014 keine Ausnahmen, auch keine g\u00e4ngigen Zutaten wie Banane, Zitrone oder nicht gelistete Gew\u00fcrze.\n- Schlage nur Rezepte vor, bei denen die Zutaten als Gericht wirklich Sinn ergeben. Kombiniere keine Zutaten, die schlecht schmecken oder inkoh\u00e4rent w\u00e4ren.\n- Schlage nur Desserts und s\u00fc\u00dfe Gerichte vor. Kein herzhaftes Essen.\n- Verwende metrische Ma\u00dfe wo m\u00f6glich.\n- Erfinde KEINE URLs, Webseiten oder Quellen.',
-        pt: '- Todas as receitas devem ser 100% plant-based (sem latic\u00ednios, ovos ou mel) \u2014 exceto se um ingrediente n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n- CR\u00cdTICO: use apenas ingredientes da lista acima. N\u00c3O introduza nenhum ingrediente que n\u00e3o esteja na lista \u2014 sem exce\u00e7\u00f5es, nem mesmo itens comuns como banana, lim\u00e3o ou especiarias n\u00e3o listadas.\n- Sugira apenas receitas em que a combina\u00e7\u00e3o de ingredientes fa\u00e7a sentido como prato. N\u00e3o combine ingredientes de forma incoerente ou que resulte em algo sem sabor.\n- Sugira apenas sobremesas e pratos doces. N\u00e3o sugira comida salgada.\n- Use medidas m\u00e9tricas onde aplic\u00e1vel.\n- N\u00c3O invente URLs, sites ou fontes.'
+      var systemMsg = {
+        en: 'You are a vegan dessert recipe assistant. You suggest plant-based dessert ideas based strictly on a list of ingredients the user provides. RULES YOU MUST FOLLOW WITHOUT EXCEPTION:\n1. Only use ingredients from the user\'s list. Do not add any ingredient not on that list \u2014 not banana, not lemon, not any spice or fruit unless it is explicitly listed.\n2. Every ingredient marked as must-use MUST appear in at least one suggestion.\n3. Only suggest dishes where the ingredients genuinely make sense together as a dessert.\n4. Suggest only sweet/dessert dishes. No savoury food.\n5. All recipes must be 100% plant-based (no dairy, eggs, or honey) \u2014 unless a non-plant-based item appears in the must-use list.\n6. Return ONLY valid JSON. No preamble, no explanation, no markdown fences.',
+        de: 'Du bist ein Assistent f\u00fcr vegane Dessertrezepte. Du schl\u00e4gst pflanzliche Dessertideen vor, die ausschlie\u00dflich auf den Zutaten basieren, die der Nutzer angibt. REGELN, DIE DU OHNE AUSNAHME BEFOLGEN MUSST:\n1. Verwende ausschlie\u00dflich Zutaten aus der Liste des Nutzers. F\u00fcge keine Zutat hinzu, die nicht auf der Liste steht \u2014 keine Banane, keine Zitrone, kein Gew\u00fcrz oder Obst, das nicht explizit aufgef\u00fchrt ist.\n2. Jede als Pflicht markierte Zutat MUSS in mindestens einem Vorschlag vorkommen.\n3. Schlage nur Gerichte vor, bei denen die Zutaten als Dessert wirklich Sinn ergeben.\n4. Nur s\u00fc\u00dfe Gerichte und Desserts. Kein herzhaftes Essen.\n5. Alle Rezepte m\u00fcssen 100% pflanzlich sein \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste steht.\n6. Gib NUR g\u00fcltiges JSON zur\u00fcck. Keine Einleitung, keine Erkl\u00e4rung, keine Markdown-Bl\u00f6cke.',
+        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas de sobremesa. Voc\u00ea sugere ideias de sobremesas plant-based com base estritamente nos ingredientes fornecidos pelo usu\u00e1rio. REGRAS QUE VOC\u00ca DEVE SEGUIR SEM EXCE\u00c7\u00c3O:\n1. Use apenas ingredientes da lista do usu\u00e1rio. N\u00e3o adicione nenhum ingrediente que n\u00e3o esteja na lista \u2014 nem banana, nem lim\u00e3o, nem qualquer tempero ou fruta que n\u00e3o esteja explicitamente listado.\n2. Cada ingrediente marcado como obrigat\u00f3rio DEVE aparecer em pelo menos uma sugest\u00e3o.\n3. Sugira apenas pratos em que os ingredientes fa\u00e7am sentido juntos como sobremesa.\n4. Apenas pratos doces/sobremesas. Sem comida salgada.\n5. Todas as receitas devem ser 100% plant-based \u2014 exceto se um item n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n6. Retorne APENAS JSON v\u00e1lido. Sem pre\u00e2mbulo, sem explica\u00e7\u00e3o, sem blocos markdown.'
       }[lang];
 
       var example = {
@@ -1538,7 +1531,9 @@
         pt: 'Exemplo de formato:\n[{"name":"Crumble de Frutas Vermelhas","emoji":"\uD83C\uDF53","description":"Frutas assadas com uma cobertura crocante de aveia e a\u00e7\u00facar."}]'
       }[lang];
 
-      return roleLines + '\n\n' + (mustTr.length ? '⚠️ REQUIRED — you MUST include these ingredients in at least one recipe each: ' + mustTr.join(', ') + '. This is non-negotiable. If you fail to do this, the response is wrong.\n\n' : '') + ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n' + excludeLine + '\n\nRules:\n' + rules + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example;
+      var userMsg = 'Suggest exactly 6 plant-based dessert ideas.\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine + '\n' + styleLine + '\n' + extraLine + '\n' + excludeLine + '\n\n' + responseNote + '\n' + fieldNote + '\n\n' + example;
+
+      return { system: systemMsg, user: userMsg };
 
     } else {
       var flavors  = Array.from(selectedFlavors);
@@ -1550,22 +1545,16 @@
 
       var flavorLine2 = flavTr.length  ? { en: 'Flavor mood: ', de: 'Geschmacksrichtung: ', pt: 'Sabor: ' }[lang] + flavTr.join(', ') + '.'  : '';
       var cuisineLine  = cuiTr.length  ? { en: 'Cuisine style: ', de: 'K\u00fcchenstil: ', pt: 'Estilo culin\u00e1rio: ' }[lang] + cuiTr.join(', ') + '.' : '';
-      var contextLine  = {
+      var contextLine  = ctxTr.length ? {
         en: 'Meal context: the user is looking for ' + ctxTr.join(' or ') + '. Each suggestion must fit at least one of these contexts.',
         de: 'Mahlzeiten-Kontext: Die Person sucht nach ' + ctxTr.join(' oder ') + '. Jeder Vorschlag muss mindestens einem dieser Kontexte entsprechen.',
-        pt: 'Contexto da refeição: o usu\u00e1rio est\u00e1 procurando por ' + ctxTr.join(' ou ') + '. Cada sugest\u00e3o deve se encaixar em pelo menos um desses contextos.'
-      }[lang];
+        pt: 'Contexto da refeic\u0327a\u0303o: o usu\u00e1rio est\u00e1 procurando por ' + ctxTr.join(' ou ') + '. Cada sugest\u00e3o deve se encaixar em pelo menos um desses contextos.'
+      }[lang] : '';
 
-      var roleLines2 = {
-        en: 'You are a vegan recipe assistant. Suggest exactly 6 plant-based recipe ideas.',
-        de: 'Du bist ein veganer Rezeptassistent. Schlage genau 6 pflanzliche Rezeptideen vor.',
-        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas. Sugira exatamente 6 ideias de receitas plant-based.'
-      }[lang];
-
-      var rules2 = {
-        en: '- All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 except if a non-plant-based ingredient appears in the must-include list, in which case you may use that ingredient.\n- CRITICAL: only use ingredients from the provided list above. Do NOT introduce any ingredient not on that list \u2014 no exceptions, not even common items like banana, lemon, or spices not listed.\n- Only suggest recipes where the combination of ingredients genuinely makes sense as a dish. Do not combine ingredients in ways that would taste bad or be incoherent.\n- Use metric measurements: ml, litres, grams, kg, cm (tablespoons and teaspoons are acceptable, but avoid ounces, cups, inches, or Fahrenheit).\n- Prioritise nutritional balance across the 6 suggestions: aim to cover protein sources, complex carbohydrates, and vitamin-rich vegetables where the available ingredients allow.\n- Do NOT invent or hallucinate URLs, websites, or sources.',
-        de: '- Alle Rezepte m\u00fcssen 100% pflanzlich sein (kein Fleisch, Fisch, Milchprodukte, Eier oder Honig) \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste erscheint.\n- KRITISCH: Verwende ausschlie\u00dflich Zutaten aus der oben angegebenen Liste. F\u00fcge KEINE Zutat hinzu, die nicht auf der Liste steht \u2014 keine Ausnahmen, auch keine g\u00e4ngigen Zutaten wie Banane, Zitrone oder nicht gelistete Gew\u00fcrze.\n- Schlage nur Rezepte vor, bei denen die Zutaten als Gericht wirklich Sinn ergeben. Kombiniere keine Zutaten, die schlecht schmecken oder inkoh\u00e4rent w\u00e4ren.\n- Verwende metrische Ma\u00dfe: ml, Liter, Gramm, kg, cm (Essl\u00f6ffel und Teel\u00f6ffel sind akzeptabel).\n- Priorisiere n\u00e4hrwertm\u00e4\u00dfige Ausgewogenheit \u00fcber die 6 Vorschl\u00e4ge hinweg.\n- Erfinde KEINE URLs, Webseiten oder Quellen.',
-        pt: '- Todas as receitas devem ser 100% plant-based (sem carne, peixe, latic\u00ednios, ovos ou mel) \u2014 exceto se um ingrediente n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n- CR\u00cdTICO: use apenas ingredientes da lista acima. N\u00c3O introduza nenhum ingrediente que n\u00e3o esteja na lista \u2014 sem exce\u00e7\u00f5es, nem mesmo itens comuns como banana, lim\u00e3o ou especiarias n\u00e3o listadas.\n- Sugira apenas receitas em que a combina\u00e7\u00e3o de ingredientes fa\u00e7a sentido como prato. N\u00e3o combine ingredientes de forma incoerente ou que resulte em algo sem sabor.\n- Use medidas m\u00e9tricas: ml, litros, gramas, kg, cm (colheres de sopa e ch\u00e1 s\u00e3o aceit\u00e1veis).\n- Priorize equil\u00edbrio nutricional entre as 6 sugest\u00f5es.\n- N\u00c3O invente URLs, sites ou fontes.'
+      var systemMsg2 = {
+        en: 'You are a vegan recipe assistant. You suggest plant-based recipe ideas based strictly on a list of ingredients the user provides. RULES YOU MUST FOLLOW WITHOUT EXCEPTION:\n1. Only use ingredients from the user\'s list. Do not add any ingredient not on that list \u2014 not banana, not lemon, not any spice, herb, or produce unless it is explicitly listed.\n2. Every ingredient marked as must-use MUST appear in at least one suggestion.\n3. Only suggest dishes where the ingredients genuinely make sense together.\n4. All recipes must be 100% plant-based (no meat, fish, dairy, eggs, or honey) \u2014 unless a non-plant-based item appears in the must-use list.\n5. Use metric measurements (ml, litres, grams, kg; tablespoons and teaspoons are acceptable).\n6. Return ONLY valid JSON. No preamble, no explanation, no markdown fences.',
+        de: 'Du bist ein veganer Rezeptassistent. Du schl\u00e4gst pflanzliche Rezeptideen vor, die ausschlie\u00dflich auf den Zutaten basieren, die der Nutzer angibt. REGELN, DIE DU OHNE AUSNAHME BEFOLGEN MUSST:\n1. Verwende ausschlie\u00dflich Zutaten aus der Liste des Nutzers. F\u00fcge keine Zutat hinzu, die nicht auf der Liste steht \u2014 keine Banane, keine Zitrone, kein Gew\u00fcrz, kein Kraut oder Gem\u00fcse, das nicht explizit aufgef\u00fchrt ist.\n2. Jede als Pflicht markierte Zutat MUSS in mindestens einem Vorschlag vorkommen.\n3. Schlage nur Gerichte vor, bei denen die Zutaten wirklich Sinn ergeben.\n4. Alle Rezepte m\u00fcssen 100% pflanzlich sein \u2014 au\u00dfer wenn eine nicht-pflanzliche Zutat in der Pflichtliste steht.\n5. Verwende metrische Ma\u00dfe.\n6. Gib NUR g\u00fcltiges JSON zur\u00fcck. Keine Einleitung, keine Erkl\u00e4rung, keine Markdown-Bl\u00f6cke.',
+        pt: 'Voc\u00ea \u00e9 um assistente de receitas veganas. Voc\u00ea sugere ideias de receitas plant-based com base estritamente nos ingredientes fornecidos pelo usu\u00e1rio. REGRAS QUE VOC\u00ca DEVE SEGUIR SEM EXCE\u00c7\u00c3O:\n1. Use apenas ingredientes da lista do usu\u00e1rio. N\u00e3o adicione nenhum ingrediente que n\u00e3o esteja na lista \u2014 nem banana, nem lim\u00e3o, nem qualquer tempero, erva ou vegetal que n\u00e3o esteja explicitamente listado.\n2. Cada ingrediente marcado como obrigat\u00f3rio DEVE aparecer em pelo menos uma sugest\u00e3o.\n3. Sugira apenas pratos em que os ingredientes fa\u00e7am sentido juntos.\n4. Todas as receitas devem ser 100% plant-based \u2014 exceto se um item n\u00e3o plant-based aparecer na lista de obrigat\u00f3rios.\n5. Use medidas m\u00e9tricas.\n6. Retorne APENAS JSON v\u00e1lido. Sem pre\u00e2mbulo, sem explica\u00e7\u00e3o, sem blocos markdown.'
       }[lang];
 
       var example2 = {
@@ -1574,7 +1563,9 @@
         pt: 'Exemplo de formato:\n[{"name":"Aglio e Olio","emoji":"\uD83C\uDF5D","description":"Macarr\u00e3o refogado com alho, azeite e pimenta em flocos."}]'
       }[lang];
 
-      return roleLines2 + '\n\n' + (mustTr.length ? '⚠️ REQUIRED — you MUST include these ingredients in at least one recipe each: ' + mustTr.join(', ') + '. This is non-negotiable. If you fail to do this, the response is wrong.\n\n' : '') + ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n' + excludeLine + '\n\nRules:\n' + rules2 + '\n' + responseNote + '\n' + fieldNote + '\n\n' + example2;
+      var userMsg2 = 'Suggest exactly 6 plant-based recipe ideas.\n\n' + ingredientLine + '\n' + mustLine + '\n' + flavorLine2 + '\n' + cuisineLine + '\n' + contextLine + '\n' + extraLine + '\n' + excludeLine + '\n\n' + responseNote + '\n' + fieldNote + '\n\n' + example2;
+
+      return { system: systemMsg2, user: userMsg2 };
     }
   }
 
@@ -1624,7 +1615,7 @@
     var extraReq  = getExtraRequest();
     var prompt    = buildSuggestionsPrompt(available, must, extraReq, exclude);
 
-    return workerFetch({ messages: [{ role: 'user', content: prompt }], max_tokens: 1200 })
+    return workerFetch({ messages: [{ role: 'user', content: prompt.user }], system: prompt.system, max_tokens: 1200 })
       .then(function(data) {
         var raw = data.text.replace(/```json|```/gi, '').trim();
         var recipes = JSON.parse(raw);
